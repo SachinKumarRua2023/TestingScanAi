@@ -6,6 +6,14 @@
       "dest": "/api/analyze.js"
     },
     {
+      "src": "/HepatoScan_AI_Research",
+      "dest": "/public/HepatoScan_AI_Research.html"
+    },
+    {
+      "src": "/header-vision",
+      "dest": "/public/header-vision.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
