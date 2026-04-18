@@ -1,21 +1,21 @@
 {
   "version": 2,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/analyze",
-      "dest": "/api/analyze.js"
+      "source": "/api/analyze",
+      "destination": "/api/analyze.js"
     },
     {
-      "src": "/HepatoScan_AI_Research",
-      "dest": "/HepatoScan_AI_Research.html"
+      "source": "/HepatoScan_AI_Research",
+      "destination": "/HepatoScan_AI_Research.html"
     },
     {
-      "src": "/header-vision",
-      "dest": "/header-vision.html"
+      "source": "/header-vision",
+      "destination": "/header-vision.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
