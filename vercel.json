@@ -7,11 +7,11 @@
     },
     {
       "src": "/HepatoScan_AI_Research",
-      "dest": "/public/HepatoScan_AI_Research.html"
+      "dest": "/HepatoScan_AI_Research.html"
     },
     {
       "src": "/header-vision",
-      "dest": "/public/header-vision.html"
+      "dest": "/header-vision.html"
     },
     {
       "src": "/(.*)",
