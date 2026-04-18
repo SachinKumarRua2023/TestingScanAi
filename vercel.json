@@ -1,21 +1,11 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/api/analyze",
       "destination": "/api/analyze.js"
-    },
-    {
-      "source": "/HepatoScan_AI_Research",
-      "destination": "/HepatoScan_AI_Research.html"
-    },
-    {
-      "source": "/header-vision",
-      "destination": "/header-vision.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }
