@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/HepatoScan_AI_Research", "destination": "/HepatoScan_AI_Research.html" },
+    { "source": "/header-vision", "destination": "/header-vision.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
