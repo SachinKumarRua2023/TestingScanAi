@@ -897,57 +897,34 @@ Be thorough, clinically accurate, and professional. If the image quality is poor
     }, 900);
 
     try {
-      // Get API key from environment (Vercel injects as GEMMA_API_KEY but for browser we need to handle)
-      // For Vercel deployment: the API key needs to be proxied server-side for security
-      // This implementation calls a /api/analyze endpoint OR directly uses the key from meta tag
-      
-      // Try to get key from meta tag (set by server) or use direct API
-      const apiKeyMeta = document.querySelector('meta[name="gemma-key"]');
-      const apiKey = apiKeyMeta?.content || window.GEMMA_API_KEY || '';
-
+      // Call the Vercel serverless function at /api/analyze
+      // This keeps GEMMA_API_KEY secret on the server side
       let responseText = '';
 
-      if (apiKey) {
-        // Use Google AI Studio / Gemini API with the provided key
-        // Gemma 4 / Gemini 2.0 Flash supports vision
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${apiKey}`, {
+      try {
+        const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: buildPrompt() },
-                { inline_data: { mime_type: imageMime, data: imageBase64 } }
-              ]
-            }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+            imageBase64,
+            imageMime,
+            prompt: buildPrompt(),
           })
         });
 
-        if (!res.ok) {
-          // Fallback to gemini-2.0-flash
-          const res2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: buildPrompt() },
-                  { inline_data: { mime_type: imageMime, data: imageBase64 } }
-                ]
-              }],
-              generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
-            })
-          });
-          const data2 = await res2.json();
-          responseText = data2?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        } else {
+        if (res.ok) {
           const data = await res.json();
-          responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          responseText = data.text || '';
+          if (data.model) showToast(`✅ Analyzed with ${data.model}`);
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `API error ${res.status}`);
         }
-      } else {
-        // No API key available in browser — show demo report
+      } catch (apiErr) {
+        console.warn('API call failed, using demo:', apiErr.message);
+        // Fallback to demo report if /api/analyze not available (e.g. local dev)
         responseText = getDemoReport(scanType);
+        showToast('⚠️ Demo mode — deploy to Vercel with GEMMA_API_KEY for real analysis');
       }
 
       // Clean and parse JSON
@@ -956,10 +933,9 @@ Be thorough, clinically accurate, and professional. If the image quality is poor
       setLoadStep(6);
       await new Promise(r => setTimeout(r, 500));
       setReport(parsed);
-      showToast('✅ Analysis complete!');
     } catch(err) {
       console.error(err);
-      // Fallback to demo
+      // Final fallback to demo
       const demo = JSON.parse(getDemoReport(scanType));
       setReport(demo);
       showToast('⚠️ Used demo report — configure GEMMA_API_KEY in Vercel environment variables');
