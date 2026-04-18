@@ -1,18 +1,10 @@
 {
   "version": 2,
-  "outputDirectory": "public",
-  "rewrites": [
-    {
-      "source": "/MediScanApp",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/HepatoScan_AI_Research",
-      "destination": "/HepatoScan_AI_Research.html"
-    },
-    {
-      "source": "/header-vision",
-      "destination": "/header-vision.html"
-    }
+  "routes": [
+    { "src": "/api/analyze", "dest": "/api/analyze.js" },
+    { "src": "/MediScanApp", "dest": "/MediScanApp.html" },
+    { "src": "/HepatoScan_AI_Research", "dest": "/HepatoScan_AI_Research.html" },
+    { "src": "/header-vision", "dest": "/header-vision.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
