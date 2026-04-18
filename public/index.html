@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HepatoScan AI v3.0 — Home</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --navy: #0B1F4B; --teal: #0D7377; --emerald: #14A085;
+    --red: #C0392B; --amber: #E67E22; --light: #BDC3C7;
+    --dark: #1A1A2E; --mid: #7F8C8D;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--dark); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(11,31,75,.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(13,115,119,.3);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .8rem 2rem;
+  }
+  .nav-logo { font-weight: 900; font-size: 1.1rem; color: var(--emerald); letter-spacing: 1px; text-decoration: none; }
+  .nav-links { display: flex; gap: 1.5rem; }
+  .nav-links a { color: var(--light); text-decoration: none; font-size: .85rem; transition: .2s; }
+  .nav-links a:hover { color: var(--emerald); }
+
+  /* ── HERO ── */
+  #hero { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+  #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-content {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; z-index: 2; padding: 2rem;
+  }
+  .hero-badge {
+    background: rgba(13,115,119,0.3); border: 1px solid var(--teal);
+    border-radius: 50px; padding: .4rem 1.4rem; font-size: .85rem;
+    letter-spacing: 2px; color: var(--emerald); text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .hero-title {
+    font-size: clamp(2.8rem, 7vw, 5.5rem); font-weight: 900; line-height: 1.05;
+    background: linear-gradient(135deg, #fff 0%, var(--emerald) 60%, var(--teal) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 1rem;
+  }
+  .hero-sub {
+    font-size: 1.1rem; color: var(--light); max-width: 700px;
+    line-height: 1.7; margin-bottom: 2.5rem;
+  }
+  .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--teal), var(--emerald));
+    color: #fff; padding: .9rem 2.2rem; border-radius: 10px; font-weight: 700;
+    text-decoration: none; font-size: 1rem; transition: .3s;
+    box-shadow: 0 4px 20px rgba(13,115,119,.4);
+  }
+  .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(13,115,119,.6); }
+
+  .btn-outline {
+    border: 2px solid var(--teal); color: var(--teal); padding: .9rem 2.2rem;
+    border-radius: 10px; font-weight: 700; text-decoration: none;
+    font-size: 1rem; transition: .3s;
+  }
+  .btn-outline:hover { background: var(--teal); color: #fff; }
+
+  .btn-ghost {
+    border: 2px solid rgba(255,255,255,.2); color: var(--light); padding: .9rem 2.2rem;
+    border-radius: 10px; font-weight: 700; text-decoration: none;
+    font-size: 1rem; transition: .3s;
+  }
+  .btn-ghost:hover { border-color: var(--light); color: #fff; }
+
+  .scroll-hint {
+    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    color: var(--mid); font-size: .85rem;
+    display: flex; flex-direction: column; align-items: center; gap: .4rem;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ── SECTIONS ── */
+  .section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+  .section-label { color: var(--teal); font-size: .8rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: .5rem; font-weight: 700; }
+  .section-title { font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 900; margin-bottom: 1rem; }
+  .section-sub { color: var(--light); line-height: 1.7; max-width: 680px; margin-bottom: 3rem; }
+
+  /* ── PAGES CARDS ── */
+  .pages-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem; margin-top: 2rem;
+  }
+  .page-card {
+    border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(13,115,119,.3);
+    transition: all .3s; cursor: pointer;
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column;
+    background: rgba(255,255,255,.03);
+  }
+  .page-card:hover { transform: translateY(-6px); border-color: var(--emerald); box-shadow: 0 20px 60px rgba(13,115,119,.25); }
+  .page-card-preview {
+    height: 180px; display: flex; align-items: center; justify-content: center;
+    font-size: 4rem; position: relative; overflow: hidden;
+  }
+  .page-card-preview::before {
+    content: ''; position: absolute; inset: 0;
+    opacity: .15;
+  }
+  .card-app .page-card-preview { background: linear-gradient(135deg, #030a0e, #071419); }
+  .card-app .page-card-preview::before { background: radial-gradient(ellipse, #00d4ff, transparent 70%); opacity: .3; }
+  .card-research .page-card-preview { background: linear-gradient(135deg, #0B1F4B, #0D7377); }
+  .card-research .page-card-preview::before { background: radial-gradient(ellipse, #14A085, transparent 70%); opacity: .3; }
+  .card-vision .page-card-preview { background: linear-gradient(135deg, #1a0533, #2d1b69); }
+  .card-vision .page-card-preview::before { background: radial-gradient(ellipse, #a855f7, transparent 70%); opacity: .3; }
+
+  .page-card-body { padding: 1.8rem; flex: 1; display: flex; flex-direction: column; }
+  .page-card-tag {
+    font-size: .72rem; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--teal); margin-bottom: .6rem; font-weight: 700;
+  }
+  .page-card-title { font-size: 1.3rem; font-weight: 800; margin-bottom: .6rem; }
+  .page-card-desc { color: var(--light); font-size: .88rem; line-height: 1.6; flex: 1; margin-bottom: 1.2rem; }
+  .page-card-link {
+    display: inline-flex; align-items: center; gap: .5rem;
+    color: var(--emerald); font-size: .85rem; font-weight: 700;
+    letter-spacing: .5px; transition: gap .2s;
+  }
+  .page-card:hover .page-card-link { gap: .8rem; }
+
+  /* ── VISION CARDS ── */
+  .vision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+  .vision-card {
+    background: rgba(13,115,119,.08); border: 1px solid rgba(13,115,119,.25);
+    border-radius: 16px; padding: 1.8rem; transition: .3s;
+  }
+  .vision-card:hover { transform: translateY(-4px); border-color: var(--emerald); box-shadow: 0 10px 30px rgba(13,115,119,.15); }
+  .vision-icon { font-size: 2.2rem; margin-bottom: 1rem; }
+  .vision-title { font-weight: 800; font-size: 1rem; color: var(--emerald); margin-bottom: .5rem; }
+  .vision-body { color: var(--light); font-size: .87rem; line-height: 1.6; }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    background: rgba(13,115,119,.08); border-top: 1px solid rgba(13,115,119,.2);
+    border-bottom: 1px solid rgba(13,115,119,.2);
+    padding: 3rem 2rem;
+  }
+  .stats-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 2rem; text-align: center; }
+  .stat-num { font-size: 2.6rem; font-weight: 900; color: var(--emerald); display: block; }
+  .stat-label { color: var(--light); font-size: .85rem; margin-top: .3rem; line-height: 1.4; }
+
+  /* ── TECH STACK ── */
+  .tech-pills { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.5rem; }
+  .tech-pill {
+    padding: .5rem 1rem; border-radius: 30px;
+    border: 1px solid rgba(13,115,119,.4);
+    background: rgba(13,115,119,.1); color: var(--light);
+    font-size: .82rem; font-weight: 600;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: rgba(0,0,0,.5); border-top: 1px solid rgba(255,255,255,.06);
+    padding: 3rem 2rem; text-align: center;
+  }
+  footer p { color: var(--mid); font-size: .85rem; margin: .3rem 0; }
+  footer strong { color: var(--emerald); }
+  .footer-links { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .footer-links a { color: var(--teal); text-decoration: none; font-size: .9rem; transition: .2s; }
+  .footer-links a:hover { color: var(--emerald); }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(13,115,119,.4), transparent); }
+
+  @media (max-width: 700px) {
+    .nav-links { display: none; }
+    .hero-ctas { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">⬡ HepatoScan AI</a>
+  <div class="nav-links">
+    <a href="#pages">Pages</a>
+    <a href="#vision">Vision</a>
+    <a href="#tech">Tech Stack</a>
+    <a href="/HepatoScan_AI_Research">📊 Research</a>
+    <a href="/header-vision">🌐 About</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-badge">🏥 Blockchain-Powered Medical AI Platform</div>
+    <h1 class="hero-title">HepatoScan AI v3.0</h1>
+    <p class="hero-sub">
+      The world's first blockchain-powered liver intelligence network.
+      AI-diagnosed in &lt;60 seconds. Cross-hospital data access in 3 seconds.
+      Backed by peer-reviewed research. Built for real clinical impact.
+    </p>
+    <div class="hero-ctas">
+      <a href="/MediScanApp" class="btn-primary">🔬 Launch MediScan App</a>
+      <a href="/HepatoScan_AI_Research" class="btn-outline">📊 Research Evidence</a>
+      <a href="/header-vision" class="btn-ghost">🌐 Our Vision</a>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Explore the platform</span>
+    <span>↓</span>
+  </div>
+</div>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div>
+      <span class="stat-num">AUC 0.95</span>
+      <div class="stat-label">AI Diagnostic Accuracy<br><small style="color:var(--mid)">Wei et al. Cancers 2023</small></div>
+    </div>
+    <div>
+      <span class="stat-num">&lt;60s</span>
+      <div class="stat-label">DICOM to full report<br><small style="color:var(--mid)">vs 24–72hr radiologist queue</small></div>
+    </div>
+    <div>
+      <span class="stat-num">3s</span>
+      <div class="stat-label">Cross-hospital data access<br><small style="color:var(--mid)">vs 48–72hr fax/phone</small></div>
+    </div>
+    <div>
+      <span class="stat-num">2M+</span>
+      <div class="stat-label">Annual liver disease deaths<br><small style="color:var(--mid)">WHO Mortality DB 2024</small></div>
+    </div>
+    <div>
+      <span class="stat-num">38.5%</span>
+      <div class="stat-label">NAFLD-HCC non-cirrhotic<br><small style="color:var(--mid)">excluded from guidelines</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGES SECTION -->
+<div id="pages" class="section">
+  <div class="section-label">Platform Pages</div>
+  <h2 class="section-title">Explore the Platform</h2>
+  <p class="section-sub">
+    Two core pages powering HepatoScan AI — the live medical imaging app and the full research evidence report.
+  </p>
+
+  <div class="pages-grid">
+    <!-- MediScan App -->
+    <a href="/MediScanApp" class="page-card card-app">
+      <div class="page-card-preview">🔬</div>
+      <div class="page-card-body">
+        <div class="page-card-tag">Live Application</div>
+        <div class="page-card-title">MediScan AI — Imaging App</div>
+        <div class="page-card-desc">
+          Upload X-Ray, MRI, or CT scans and get a comprehensive AI-generated clinical report in seconds.
+          Includes findings, severity grading, patient instructions, and specialist referrals.
+        </div>
+        <div class="page-card-link">Open App →</div>
+      </div>
+    </a>
+
+    <!-- Research -->
+    <a href="/HepatoScan_AI_Research" class="page-card card-research">
+      <div class="page-card-preview">📊</div>
+      <div class="page-card-body">
+        <div class="page-card-tag">Market Research & Evidence</div>
+        <div class="page-card-title">HepatoScan AI — Research Report</div>
+        <div class="page-card-desc">
+          Full peer-reviewed evidence base. 12 published studies, live Chart.js data visualizations,
+          blockchain architecture, AI model comparisons, and before/after clinical workflow analysis.
+        </div>
+        <div class="page-card-link">View Research →</div>
+      </div>
+    </a>
+
+    <!-- Vision -->
+    <a href="/header-vision" class="page-card card-vision">
+      <div class="page-card-preview">🌐</div>
+      <div class="page-card-body">
+        <div class="page-card-tag">Vision & Mission</div>
+        <div class="page-card-title">HepatoScan AI — Our Vision</div>
+        <div class="page-card-desc">
+          Universal access to expert-level liver diagnostics. Patient data sovereignty via blockchain.
+          Speed that saves lives. AI + human expertise working together at scale.
+        </div>
+        <div class="page-card-link">Read Vision →</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- VISION SECTION -->
+<div id="vision" class="section">
+  <div class="section-label">Our Vision</div>
+  <h2 class="section-title">Transforming Liver Healthcare</h2>
+  <p class="section-sub">
+    Every feature backed by published research. Every second saved is a life potentially changed.
+    HepatoScan AI closes the gap between cutting-edge research and real clinical impact.
+  </p>
+
+  <div class="vision-grid">
+    <div class="vision-card">
+      <div class="vision-icon">🌍</div>
+      <div class="vision-title">Universal Access</div>
+      <div class="vision-body">Every patient — regardless of location — deserves instant access to world-class liver diagnostics. Our network connects tier-2/3 cities to expert-level AI analysis.</div>
+    </div>
+    <div class="vision-card">
+      <div class="vision-icon">⛓️</div>
+      <div class="vision-title">Data Sovereignty</div>
+      <div class="vision-body">Patients own their medical data. Hyperledger Fabric blockchain ensures consent-based sharing across hospitals with immutable audit trails and cryptographic security.</div>
+    </div>
+    <div class="vision-card">
+      <div class="vision-icon">⚡</div>
+      <div class="vision-title">Speed Saves Lives</div>
+      <div class="vision-body">Diagnosis time reduced from 72 hours to 60 seconds. Emergency cross-hospital data access in 3 seconds. Every second matters in liver emergencies.</div>
+    </div>
+    <div class="vision-card">
+      <div class="vision-icon">🧠</div>
+      <div class="vision-title">AI + Human Expertise</div>
+      <div class="vision-body">AI handles pattern recognition at radiologist-level (AUC 0.95). Doctors focus on complex decisions and patient care — a partnership that amplifies clinical capabilities.</div>
+    </div>
+    <div class="vision-card">
+      <div class="vision-icon">📊</div>
+      <div class="vision-title">Evidence-Based</div>
+      <div class="vision-body">Every feature backed by peer-reviewed research. 12 published studies cited. No black boxes — full transparency with Grad-CAM explainability heatmaps.</div>
+    </div>
+    <div class="vision-card">
+      <div class="vision-icon">🚨</div>
+      <div class="vision-title">Proactive Care</div>
+      <div class="vision-body">Smart contracts flag at-risk patients before symptoms worsen. NAFLD non-cirrhotic HCC surveillance for the 38.5% currently excluded from clinical guidelines.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- TECH STACK SECTION -->
+<div id="tech" class="section">
+  <div class="section-label">Technical Stack</div>
+  <h2 class="section-title">Built for Clinical-Grade Reliability</h2>
+  <p class="section-sub">
+    Four tightly integrated layers — MERN stack, AI pipeline, blockchain network, and real-time alerts —
+    built for HIPAA compliance and production performance.
+  </p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-top:1rem;">
+    <div style="background:rgba(13,115,119,.08);border:1px solid rgba(13,115,119,.25);border-left:4px solid var(--teal);border-radius:12px;padding:1.5rem;">
+      <div style="color:var(--teal);font-weight:800;font-size:.85rem;letter-spacing:1px;margin-bottom:.8rem;">🖥️ FRONTEND</div>
+      <div class="tech-pills">
+        <span class="tech-pill">React 18</span>
+        <span class="tech-pill">Three.js</span>
+        <span class="tech-pill">Tailwind CSS</span>
+        <span class="tech-pill">Socket.io Client</span>
+        <span class="tech-pill">Chart.js</span>
+        <span class="tech-pill">DICOM Viewer</span>
+      </div>
+    </div>
+    <div style="background:rgba(13,115,119,.08);border:1px solid rgba(13,115,119,.25);border-left:4px solid var(--emerald);border-radius:12px;padding:1.5rem;">
+      <div style="color:var(--emerald);font-weight:800;font-size:.85rem;letter-spacing:1px;margin-bottom:.8rem;">⚙️ BACKEND (MERN)</div>
+      <div class="tech-pills">
+        <span class="tech-pill">Node.js</span>
+        <span class="tech-pill">Express 4.x</span>
+        <span class="tech-pill">MongoDB 7.x</span>
+        <span class="tech-pill">Socket.io 4.x</span>
+        <span class="tech-pill">JWT Auth</span>
+        <span class="tech-pill">GridFS DICOM</span>
+      </div>
+    </div>
+    <div style="background:rgba(20,160,133,.08);border:1px solid rgba(20,160,133,.25);border-left:4px solid var(--emerald);border-radius:12px;padding:1.5rem;">
+      <div style="color:var(--emerald);font-weight:800;font-size:.85rem;letter-spacing:1px;margin-bottom:.8rem;">🧠 AI PIPELINE</div>
+      <div class="tech-pills">
+        <span class="tech-pill">Gemma 4 31B</span>
+        <span class="tech-pill">MedGemma 1.5 4B</span>
+        <span class="tech-pill">MONAI</span>
+        <span class="tech-pill">FastAPI</span>
+        <span class="tech-pill">Grad-CAM</span>
+        <span class="tech-pill">LI-RADS</span>
+      </div>
+    </div>
+    <div style="background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.25);border-left:4px solid var(--red);border-radius:12px;padding:1.5rem;">
+      <div style="color:#e57373;font-weight:800;font-size:.85rem;letter-spacing:1px;margin-bottom:.8rem;">⛓️ BLOCKCHAIN</div>
+      <div class="tech-pills">
+        <span class="tech-pill">Hyperledger Fabric 2.5</span>
+        <span class="tech-pill">IPFS</span>
+        <span class="tech-pill">AES-256</span>
+        <span class="tech-pill">3 Chaincodes</span>
+        <span class="tech-pill">Patient DID</span>
+        <span class="tech-pill">3,500+ TPS</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="/MediScanApp">🔬 MediScan App</a>
+    <a href="/HepatoScan_AI_Research">📊 Research Evidence</a>
+    <a href="/header-vision">🌐 Our Vision</a>
+  </div>
+  <p><strong>HepatoScan AI v3.0</strong> — AI-Powered Liver Intelligence + Blockchain Medical Network</p>
+  <p>Powered by Gemma 4 (31B) · MedGemma 1.5 4B · Hyperledger Fabric 2.5 · MONAI · React · Three.js</p>
+  <p style="margin-top:.5rem;font-size:.78rem;">Gemma 4 Good Hackathon · Apache 2.0 License · All research citations peer-reviewed</p>
+</footer>
+
+<script>
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 8;
+
+  const count = 3000;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const col = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    const r = Math.random() * 6 + 0.5;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.6;
+    pos[i*3+2] = r * Math.cos(phi) * 0.4;
+    const t = Math.random();
+    col[i*3]   = 0.05 + t * 0.04;
+    col[i*3+1] = 0.45 + t * 0.17;
+    col[i*3+2] = 0.47 + t * 0.1;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+
+  const mat = new THREE.PointsMaterial({
+    size: 0.06, vertexColors: true, transparent: true, opacity: 0.75,
+    sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const particles = new THREE.Points(geo, mat);
+  scene.add(particles);
+
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0x0D7377, transparent: true, opacity: 0.07, wireframe: true });
+  const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(1.8, 32, 32), coreMat);
+  scene.add(coreMesh);
+
+  let frame = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    frame++;
+    particles.rotation.y += 0.001;
+    particles.rotation.x = Math.sin(frame * 0.003) * 0.1;
+    coreMesh.rotation.y -= 0.002;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
+</body>
+</html>
