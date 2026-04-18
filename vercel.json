@@ -1,10 +1,8 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "routes": [
-    { "src": "/api/analyze", "dest": "/api/analyze.js" },
-    { "src": "/MediScanApp", "dest": "/MediScanApp.html" },
-    { "src": "/HepatoScan_AI_Research", "dest": "/HepatoScan_AI_Research.html" },
-    { "src": "/header-vision", "dest": "/header-vision.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/api/analyze", "dest": "/api/analyze.js" }
   ]
 }
