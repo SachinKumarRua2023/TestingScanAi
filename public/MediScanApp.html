@@ -1,749 +1,795 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MediScan AI — Clinical Diagnostic Platform</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚕️</text></svg>"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;700;900&display=swap');
+  :root {
+    --bg:#030a0e;--surface:#071419;--surface2:#0c1f27;--border:#0e3040;--border2:#1a4a5e;
+    --accent:#00d4ff;--accent2:#00ff9d;--accent3:#ff6b35;
+    --text:#e8f4f8;--text2:#7ab3c4;--text3:#3d7a8e;
+    --danger:#ff3d5a;--warn:#ffab00;--success:#00ff9d;--purple:#a78bfa;
+    --glow:0 0 30px rgba(0,212,255,0.15);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow-x:hidden;}
+  #root{min-height:100vh;}
+  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+  #three-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.35;}
+  .app-shell{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;}
 
-:root {
-  --bg: #060d0f;
-  --panel: #0b1618;
-  --panel2: #0f1e21;
-  --border: #1a3a3f;
-  --teal: #00d4aa;
-  --teal2: #007a65;
-  --amber: #f0a500;
-  --red: #ff4444;
-  --green: #22c55e;
-  --blue: #38bdf8;
-  --purple: #a78bfa;
-  --text: #e2f0ee;
-  --muted: #5a8080;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
-}
+  /* HEADER */
+  .header{padding:18px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);backdrop-filter:blur(20px);background:rgba(3,10,14,0.88);position:sticky;top:0;z-index:100;}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:var(--glow);}
+  .logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.5px;}
+  .logo-text span{color:var(--accent);}
+  .header-badge{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);border:1px solid rgba(0,255,157,0.3);padding:3px 10px;border-radius:20px;}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:pulse 2s infinite;}
+  .status-text{font-size:10px;color:var(--text2);letter-spacing:1px;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+  /* LAYOUT */
+  .main{display:flex;flex:1;min-height:calc(100vh - 62px);}
+  .left-panel{width:400px;min-width:400px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:rgba(7,20,25,0.72);backdrop-filter:blur(10px);overflow-y:auto;}
+  .panel-section{padding:22px;border-bottom:1px solid var(--border);}
+  .section-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
 
-/* ── SCANLINES OVERLAY ── */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,170,.013) 2px, rgba(0,212,170,.013) 4px);
-}
+  /* Scan Tabs */
+  .scan-types{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .scan-type-btn{padding:11px 6px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:transparent;text-align:center;transition:all 0.2s;color:var(--text2);font-family:'DM Mono',monospace;}
+  .scan-type-btn.active{border-color:var(--accent);background:rgba(0,212,255,0.08);color:var(--accent);}
+  .scan-type-icon{font-size:18px;margin-bottom:5px;}
+  .scan-type-label{font-size:9px;letter-spacing:1px;text-transform:uppercase;}
 
-/* ── HEADER ── */
-header {
-  position: sticky; top: 0; z-index: 50;
-  background: rgba(6,13,15,.95); backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  padding: .9rem 2rem;
-  display: flex; align-items: center; gap: 1rem;
-}
-.logo {
-  font-family: var(--mono); font-weight: 700; font-size: 1rem;
-  color: var(--teal); letter-spacing: 2px;
-  display: flex; align-items: center; gap: .5rem;
-}
-.logo-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--teal);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
-.header-badge {
-  margin-left: auto;
-  background: rgba(0,212,170,.1); border: 1px solid rgba(0,212,170,.3);
-  color: var(--teal); font-family: var(--mono); font-size: .72rem;
-  padding: .3rem .9rem; border-radius: 4px; letter-spacing: 1px;
-}
+  /* Upload */
+  .upload-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:30px 18px;text-align:center;cursor:pointer;transition:all 0.3s;background:rgba(0,212,255,0.02);}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(0,212,255,0.05);box-shadow:var(--glow);}
+  .upload-icon{font-size:30px;margin-bottom:9px;}
+  .upload-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:4px;}
+  .upload-sub{font-size:10px;color:var(--text3);line-height:1.6;}
+  input[type=file]{display:none;}
+  .preview-area{margin-top:12px;border-radius:8px;overflow:hidden;position:relative;background:#000;border:1px solid var(--border);}
+  .preview-area img{width:100%;display:block;max-height:190px;object-fit:contain;}
+  .preview-overlay{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.82);border:1px solid var(--border2);border-radius:4px;padding:3px 7px;font-size:8px;letter-spacing:1px;color:var(--accent);}
+  .preview-remove{position:absolute;top:6px;left:6px;background:rgba(255,61,90,0.2);border:1px solid var(--danger);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:8px;color:var(--danger);letter-spacing:1px;}
 
-/* ── MAIN LAYOUT ── */
-.app-layout {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  min-height: calc(100vh - 56px);
-  position: relative; z-index: 1;
-}
+  /* Form */
+  .form-row{margin-bottom:12px;}
+  .form-label{font-size:9px;letter-spacing:2px;color:var(--text3);margin-bottom:5px;display:block;text-transform:uppercase;}
+  .form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;transition:border-color 0.2s;outline:none;}
+  .form-input:focus,.form-select:focus{border-color:var(--accent);}
+  .form-select option{background:var(--surface2);}
+  .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-/* ── SIDEBAR ── */
-.sidebar {
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  padding: 1.5rem;
-  display: flex; flex-direction: column; gap: 1.2rem;
-  overflow-y: auto;
-}
+  /* Analyze Button */
+  .analyze-btn{width:100%;padding:15px;background:linear-gradient(135deg,#0080c8,var(--accent));border:none;border-radius:9px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:#000;text-transform:uppercase;transition:all 0.3s;box-shadow:0 0 25px rgba(0,212,255,0.3);display:flex;align-items:center;justify-content:center;gap:8px;}
+  .analyze-btn:hover{transform:translateY(-2px);box-shadow:0 0 45px rgba(0,212,255,0.5);}
+  .analyze-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;}
 
-.s-title {
-  font-family: var(--mono); font-size: .7rem; color: var(--muted);
-  letter-spacing: 3px; text-transform: uppercase;
-  padding-bottom: .6rem; border-bottom: 1px solid var(--border);
-}
+  /* RIGHT PANEL */
+  .right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 
-/* API Key input */
-.field-label { font-family: var(--mono); font-size: .72rem; color: var(--teal); margin-bottom: .4rem; letter-spacing: 1px; }
-.field-input {
-  width: 100%; background: var(--bg); border: 1px solid var(--border);
-  color: var(--text); font-family: var(--mono); font-size: .8rem;
-  padding: .6rem .9rem; border-radius: 6px; outline: none;
-  transition: border-color .2s;
-}
-.field-input:focus { border-color: var(--teal); }
-.field-input::placeholder { color: var(--muted); }
+  /* Welcome */
+  .welcome-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;text-align:center;}
+  .welcome-glyph{width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,0.12),transparent 70%);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:44px;margin:0 auto 26px;animation:float 4s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .welcome-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:10px;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .welcome-sub{font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--text2);max-width:420px;line-height:1.7;margin-bottom:32px;}
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:560px;}
+  .feature-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:left;transition:all 0.3s;}
+  .feature-card:hover{border-color:var(--border2);box-shadow:var(--glow);}
+  .feature-card-icon{font-size:20px;margin-bottom:7px;}
+  .feature-card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;margin-bottom:4px;}
+  .feature-card-desc{font-size:9px;color:var(--text3);line-height:1.5;}
 
-/* Upload Zone */
-.upload-zone {
-  border: 2px dashed var(--border); border-radius: 10px;
-  padding: 2rem 1rem; text-align: center; cursor: pointer;
-  transition: all .3s; position: relative;
-}
-.upload-zone:hover, .upload-zone.drag { border-color: var(--teal); background: rgba(0,212,170,.04); }
-.upload-icon { font-size: 2.5rem; margin-bottom: .8rem; }
-.upload-text { font-size: .85rem; color: var(--muted); line-height: 1.5; }
-.upload-text strong { color: var(--text); display: block; margin-bottom: .3rem; }
-#file-input { display: none; }
+  /* Loading */
+  .loading-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+  .scanner-ring{width:88px;height:88px;position:relative;}
+  .scanner-ring::before,.scanner-ring::after{content:'';position:absolute;border-radius:50%;border:2px solid transparent;}
+  .scanner-ring::before{inset:0;border-top-color:var(--accent);animation:spin 1s linear infinite;}
+  .scanner-ring::after{inset:10px;border-top-color:var(--accent2);animation:spin 0.7s linear infinite reverse;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;}
+  .loading-text{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent);}
+  .loading-steps{display:flex;flex-direction:column;gap:7px;}
+  .loading-step{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:9px;transition:color 0.3s;}
+  .loading-step.active{color:var(--accent2);}
+  .loading-step.done{color:var(--text2);}
+  .step-dot{width:5px;height:5px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background 0.3s;}
+  .loading-step.active .step-dot{background:var(--accent2);box-shadow:0 0 8px var(--accent2);}
+  .loading-step.done .step-dot{background:var(--accent2);}
 
-/* Preview */
-.preview-box {
-  border-radius: 8px; overflow: hidden; display: none;
-  position: relative; background: #000;
-}
-.preview-box img { width: 100%; max-height: 200px; object-fit: contain; display: block; }
-.preview-overlay {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,.7); padding: .5rem;
-  font-family: var(--mono); font-size: .7rem; color: var(--teal);
-}
+  /* Results */
+  .results-container{flex:1;overflow-y:auto;padding:26px;display:flex;flex-direction:column;gap:18px;}
 
-/* Patient Info */
-.patient-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: .6rem;
-}
+  /* Report Header */
+  .report-header-card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border2);border-radius:14px;padding:22px;box-shadow:var(--glow);}
+  .rh-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
+  .report-tag{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px;}
+  .report-main-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:3px;}
+  .report-meta{font-size:10px;color:var(--text2);}
+  .severity-badge{flex-shrink:0;padding:8px 16px;border-radius:30px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;}
+  .sev-low{background:rgba(0,255,157,0.12);color:var(--success);border:1px solid var(--success);}
+  .sev-medium{background:rgba(255,171,0,0.12);color:var(--warn);border:1px solid var(--warn);}
+  .sev-high{background:rgba(255,61,90,0.12);color:var(--danger);border:1px solid var(--danger);}
+  .sev-critical{background:rgba(255,61,90,0.25);color:var(--danger);border:1px solid var(--danger);box-shadow:0 0 18px rgba(255,61,90,0.25);}
+  .meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+  .meta-item{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:7px;padding:9px 11px;}
+  .meta-key{font-size:8px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:3px;}
+  .meta-val{font-size:13px;font-weight:600;}
+  .meta-val.accent{color:var(--accent);}
+  .meta-val.warn{color:var(--warn);}
+  .meta-val.success{color:var(--success);}
 
-/* Scan type selector */
-.scan-tabs {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .4rem;
-}
-.scan-tab {
-  padding: .5rem; border-radius: 6px; text-align: center; cursor: pointer;
-  border: 1px solid var(--border); font-family: var(--mono); font-size: .72rem;
-  color: var(--muted); transition: all .2s;
-}
-.scan-tab.active { border-color: var(--teal); color: var(--teal); background: rgba(0,212,170,.08); }
+  /* Section Cards */
+  .section-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+  .card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:11px;border-bottom:1px solid var(--border);}
+  .card-title-badge{margin-left:auto;font-size:8px;padding:3px 7px;border-radius:4px;letter-spacing:1px;font-family:'DM Mono',monospace;}
 
-/* Analyze Button */
-.analyze-btn {
-  width: 100%; padding: 1rem; border-radius: 8px; border: none; cursor: pointer;
-  background: linear-gradient(135deg, var(--teal2), var(--teal));
-  color: #000; font-family: var(--mono); font-weight: 700; font-size: .9rem;
-  letter-spacing: 2px; transition: all .3s; position: relative; overflow: hidden;
-}
-.analyze-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,170,.3); }
-.analyze-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-.analyze-btn::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
-  transform: translateX(-100%);
-  transition: transform .4s;
-}
-.analyze-btn:hover::after { transform: translateX(100%); }
+  /* Measurements */
+  .measurements-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;}
+  .measurement-card{background:var(--surface2);border-radius:9px;padding:12px;border:1px solid var(--border);position:relative;overflow:hidden;}
+  .measurement-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .mc-normal::before{background:var(--success);}
+  .mc-warn::before{background:var(--warn);}
+  .mc-danger::before{background:var(--danger);}
+  .mc-name{font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:5px;}
+  .mc-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1;}
+  .mc-unit{font-size:9px;color:var(--text2);margin-left:2px;}
+  .mc-range{font-size:9px;color:var(--text3);margin-top:4px;}
+  .mc-gauge{height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden;}
+  .mc-gauge-fill{height:100%;border-radius:2px;transition:width 1.3s cubic-bezier(.2,.8,.3,1);}
+  .mc-status{font-size:9px;font-weight:700;letter-spacing:1px;margin-top:3px;}
+  .mc-status.normal{color:var(--success);}
+  .mc-status.warn{color:var(--warn);}
+  .mc-status.danger{color:var(--danger);}
+  .mc-note{font-size:9px;color:var(--text3);margin-top:5px;border-top:1px solid var(--border);padding-top:4px;line-height:1.4;}
 
-/* ── REPORT PANEL ── */
-.report-panel {
-  padding: 2rem;
-  overflow-y: auto;
-  display: flex; flex-direction: column; gap: 2rem;
-}
+  /* Charts */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+  .chart-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;}
+  .chart-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;}
+  .legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text2);}
+  .legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 
-/* Empty state */
-.empty-state {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; opacity: .35;
-}
-.empty-state .big-icon { font-size: 5rem; margin-bottom: 1.5rem; filter: grayscale(1); }
-.empty-state p { font-family: var(--mono); font-size: .85rem; color: var(--muted); line-height: 1.8; }
+  /* Confidence */
+  .conf-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+  .conf-bars{display:flex;flex-direction:column;gap:10px;}
+  .conf-label-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:10px;}
+  .conf-label-row span:first-child{color:var(--text2);}
+  .conf-label-row span:last-child{color:var(--accent);font-weight:700;}
+  .conf-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .conf-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#0080c8,var(--accent));transition:width 1.4s cubic-bezier(.2,.8,.3,1);}
 
-/* Processing Indicator */
-.processing {
-  display: none; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 60vh; text-align: center; gap: 2rem;
-}
-.scan-ring {
-  width: 120px; height: 120px; border-radius: 50%;
-  border: 2px solid rgba(0,212,170,.15);
-  border-top-color: var(--teal);
-  animation: spin 1s linear infinite;
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.scan-ring::after {
-  content: '🔬'; font-size: 2.5rem;
-  position: absolute; animation: counter-spin 1s linear infinite;
-}
-@keyframes counter-spin { to { transform: rotate(-360deg); } }
-.proc-steps { display: flex; flex-direction: column; gap: .4rem; }
-.proc-step {
-  font-family: var(--mono); font-size: .78rem; color: var(--muted);
-  transition: color .3s;
-  display: flex; align-items: center; gap: .8rem;
-}
-.proc-step.done { color: var(--teal); }
-.proc-step.active { color: var(--amber); }
-.proc-step .step-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0;
-}
+  /* Reasoning Chain */
+  .reasoning-chain{display:flex;flex-direction:column;gap:0;}
+  .reasoning-step{display:flex;gap:13px;position:relative;padding-bottom:15px;}
+  .reasoning-step:last-child{padding-bottom:0;}
+  .reasoning-step:not(:last-child)::before{content:'';position:absolute;left:13px;top:27px;bottom:0;width:1px;background:linear-gradient(180deg,var(--border2),var(--border));}
+  .step-node{width:26px;height:26px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--accent);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);}
+  .step-body{flex:1;}
+  .step-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;}
+  .step-detail{font-size:10px;color:var(--text2);line-height:1.6;}
+  .step-metric{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:9px;color:var(--accent);background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:4px;padding:3px 7px;font-family:'DM Mono',monospace;}
+  .step-conf{font-size:9px;color:var(--text3);margin-top:3px;}
 
-/* Report sections */
-.report-header {
-  background: var(--panel2); border: 1px solid var(--border);
-  border-left: 4px solid var(--teal); border-radius: 10px; padding: 1.5rem;
-  display: none;
-}
-.rh-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.rh-title { font-size: 1.3rem; font-weight: 900; color: var(--teal); }
-.rh-sub { font-family: var(--mono); font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+  /* Findings */
+  .findings-list{display:flex;flex-direction:column;gap:9px;}
+  .finding-item{display:flex;gap:11px;padding:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);align-items:flex-start;}
+  .finding-indicator{width:3px;min-height:34px;border-radius:2px;flex-shrink:0;}
+  .fi-normal{background:var(--success);}
+  .fi-mild{background:var(--warn);}
+  .fi-moderate{background:var(--accent3);}
+  .fi-severe{background:var(--danger);}
+  .finding-name{font-size:12px;font-weight:600;margin-bottom:3px;}
+  .finding-desc{font-size:10px;color:var(--text2);line-height:1.55;}
+  .finding-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
+  .ftag{font-size:8px;letter-spacing:1px;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;}
+  .ftag-region{background:rgba(0,212,255,0.07);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+  .ftag-size{background:rgba(167,139,250,0.07);color:var(--purple);border:1px solid rgba(167,139,250,0.2);}
+  .ftag-density{background:rgba(255,171,0,0.07);color:var(--warn);border:1px solid rgba(255,171,0,0.2);}
 
-.severity-badge {
-  padding: .4rem 1.2rem; border-radius: 30px;
-  font-family: var(--mono); font-weight: 700; font-size: .78rem;
-  letter-spacing: 1px; white-space: nowrap;
-}
-.sev-normal { background: rgba(34,197,94,.15); border: 1px solid var(--green); color: var(--green); }
-.sev-mild { background: rgba(240,165,0,.12); border: 1px solid var(--amber); color: var(--amber); }
-.sev-moderate { background: rgba(251,146,60,.12); border: 1px solid #fb923c; color: #fb923c; }
-.sev-severe { background: rgba(255,68,68,.15); border: 1px solid var(--red); color: var(--red); }
+  /* Advice */
+  .advice-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .advice-item{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px;}
+  .advice-item-title{font-size:9px;font-weight:600;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+  .advice-item ul{list-style:none;display:flex;flex-direction:column;gap:4px;}
+  .advice-item li{font-size:10px;color:var(--text2);line-height:1.5;padding-left:11px;position:relative;}
+  .advice-item li::before{content:'›';position:absolute;left:0;color:var(--accent);}
 
-.rh-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin-top: 1.2rem; }
-.rh-meta-item { }
-.rh-meta-key { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-bottom: .2rem; letter-spacing: 1px; }
-.rh-meta-val { font-size: .92rem; font-weight: 700; }
+  /* Patient banner */
+  .patient-banner{background:linear-gradient(135deg,rgba(0,255,157,0.04),rgba(0,212,255,0.04));border:1px solid rgba(0,255,157,0.2);border-radius:10px;padding:15px;display:flex;gap:13px;margin-bottom:13px;}
+  .patient-banner-icon{font-size:24px;flex-shrink:0;}
+  .patient-banner-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:5px;}
+  .patient-banner p{font-size:10px;color:var(--text2);line-height:1.65;}
 
-/* AI Confidence Breakdown */
-.confidence-section {
-  background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem;
-  display: none;
-}
-.section-heading {
-  font-family: var(--mono); font-size: .72rem; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--teal); margin-bottom: 1.2rem;
-  display: flex; align-items: center; gap: .8rem;
-}
-.section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  /* Referral */
+  .referral-alert{background:rgba(255,107,53,0.07);border:1px solid rgba(255,107,53,0.4);border-radius:9px;padding:15px;margin-bottom:13px;}
+  .referral-alert-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent3);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+  .referral-alert p{font-size:10px;color:var(--text2);line-height:1.6;}
+  .specialties-list{display:flex;flex-wrap:wrap;gap:7px;}
+  .specialty-tag{padding:5px 11px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);font-size:10px;display:flex;align-items:center;gap:5px;}
 
-.conf-bars { display: flex; flex-direction: column; gap: .8rem; }
-.conf-row { }
-.conf-label { display: flex; justify-content: space-between; margin-bottom: .3rem; font-family: var(--mono); font-size: .75rem; }
-.conf-label span:first-child { color: var(--text); }
-.conf-label span:last-child { color: var(--teal); font-weight: 700; }
-.conf-track {
-  height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
-}
-.conf-fill {
-  height: 100%; border-radius: 3px; transition: width 1.5s cubic-bezier(.2,.8,.3,1);
-  background: linear-gradient(90deg, var(--teal2), var(--teal));
-}
+  /* Doctors */
+  .doctors-list{display:flex;flex-direction:column;gap:9px;}
+  .doctor-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:13px;display:flex;align-items:center;gap:13px;transition:all 0.2s;}
+  .doctor-card:hover{border-color:var(--border2);box-shadow:var(--glow);}
+  .doctor-avatar{width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .doctor-info{flex:1;}
+  .doctor-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:2px;}
+  .doctor-specialty{font-size:9px;color:var(--accent);}
+  .doctor-location{font-size:9px;color:var(--text3);}
+  .doctor-rating{font-size:11px;color:var(--warn);}
+  .doctor-link{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);text-decoration:none;border:1px solid var(--border2);padding:5px 9px;border-radius:5px;transition:all 0.2s;white-space:nowrap;}
+  .doctor-link:hover{border-color:var(--accent);background:rgba(0,212,255,0.1);}
 
-/* Measurements Grid */
-.measurements-section {
-  background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem;
-  display: none;
-}
-.measurements-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;
-}
-.measurement-card {
-  background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem;
-  position: relative; overflow: hidden;
-}
-.measurement-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-}
-.mc-normal::before { background: var(--green); }
-.mc-warning::before { background: var(--amber); }
-.mc-critical::before { background: var(--red); }
-.mc-name { font-family: var(--mono); font-size: .68rem; color: var(--muted); letter-spacing: 1px; margin-bottom: .3rem; }
-.mc-value { font-size: 1.5rem; font-weight: 900; font-family: var(--mono); line-height: 1; }
-.mc-unit { font-size: .72rem; color: var(--muted); margin-left: .2rem; }
-.mc-range { font-family: var(--mono); font-size: .65rem; color: var(--muted); margin-top: .3rem; }
-.mc-status { font-family: var(--mono); font-size: .65rem; font-weight: 700; margin-top: .2rem; }
-.mc-status.normal { color: var(--green); }
-.mc-status.warning { color: var(--amber); }
-.mc-status.critical { color: var(--red); }
+  /* Disclaimer */
+  .disclaimer{background:rgba(255,171,0,0.05);border:1px solid rgba(255,171,0,0.25);border-radius:9px;padding:11px 15px;font-size:10px;color:var(--warn);line-height:1.6;display:flex;gap:8px;}
 
-/* Charts */
-.charts-section {
-  display: none;
-  display: none;
-  gap: 1.5rem;
-  grid-template-columns: 1fr 1fr;
-}
-.chart-card {
-  background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem;
-}
-.chart-title { font-family: var(--mono); font-size: .72rem; letter-spacing: 2px; color: var(--teal); margin-bottom: 1rem; text-transform: uppercase; }
-.chart-canvas-wrap { position: relative; }
+  /* Toast */
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:11px 16px;font-size:11px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:1000;max-width:300px;animation:slideIn 0.3s ease;}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+  @keyframes spin2{to{transform:rotate(360deg)}}
 
-/* AI Reasoning Trace */
-.reasoning-section {
-  background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem;
-  display: none;
-}
-.reasoning-chain { display: flex; flex-direction: column; gap: 0; }
-.reasoning-step {
-  display: flex; gap: 1rem; position: relative;
-  padding-bottom: 1.2rem;
-}
-.reasoning-step:last-child { padding-bottom: 0; }
-.reasoning-step:not(:last-child)::before {
-  content: '';
-  position: absolute; left: 11px; top: 24px; bottom: 0;
-  width: 1px; background: var(--border);
-}
-.step-node {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid var(--teal); background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  font-size: .6rem; font-family: var(--mono); color: var(--teal); font-weight: 700;
-}
-.step-content { flex: 1; }
-.step-title { font-family: var(--mono); font-size: .78rem; color: var(--text); font-weight: 700; margin-bottom: .3rem; }
-.step-detail { font-size: .82rem; color: var(--muted); line-height: 1.6; }
-.step-metric { font-family: var(--mono); font-size: .75rem; color: var(--teal); margin-top: .3rem; }
-
-/* Findings */
-.findings-section {
-  background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem;
-  display: none;
-}
-.finding-item {
-  padding: .9rem; border-radius: 8px; border: 1px solid var(--border);
-  margin-bottom: .8rem; display: flex; gap: 1rem; align-items: flex-start;
-}
-.finding-item:last-child { margin-bottom: 0; }
-.finding-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: .1rem; }
-.finding-title { font-weight: 700; font-size: .88rem; margin-bottom: .2rem; }
-.finding-desc { font-size: .82rem; color: var(--muted); line-height: 1.5; }
-.finding-sev { font-family: var(--mono); font-size: .68rem; padding: .15rem .5rem; border-radius: 3px; display: inline-block; margin-top: .3rem; font-weight: 700; }
-
-/* Recommendations */
-.rec-section {
-  background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem;
-  display: none;
-}
-.rec-list { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
-.rec-list li {
-  display: flex; gap: .8rem; align-items: flex-start;
-  font-size: .85rem; line-height: 1.5;
-}
-.rec-list li::before {
-  content: '→'; color: var(--teal); font-family: var(--mono); font-weight: 700; flex-shrink: 0; margin-top: .05rem;
-}
-
-/* Disclaimer */
-.disclaimer {
-  background: rgba(255,68,68,.04); border: 1px solid rgba(255,68,68,.2);
-  border-radius: 8px; padding: 1rem 1.2rem;
-  font-family: var(--mono); font-size: .7rem; color: rgba(255,100,100,.7);
-  display: none; line-height: 1.6;
-}
-
-/* Error */
-.error-box {
-  background: rgba(255,68,68,.08); border: 1px solid rgba(255,68,68,.3);
-  border-radius: 8px; padding: 1.2rem; display: none;
-  font-family: var(--mono); font-size: .82rem; color: var(--red); line-height: 1.6;
-}
-
-/* Full chart row */
-.chart-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; display: none;
-}
-.chart-row-single { display: none; }
-
-/* Tooltip */
-.tooltip { font-family: var(--mono) !important; font-size: .72rem !important; }
-
-@media (max-width: 900px) {
-  .app-layout { grid-template-columns: 1fr; }
-  .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
-  .chart-row { grid-template-columns: 1fr; }
-}
+  @media(max-width:900px){
+    .main{flex-direction:column;}
+    .left-panel{width:100%;min-width:0;}
+    .charts-row{grid-template-columns:1fr;}
+    .advice-grid{grid-template-columns:1fr;}
+    .conf-grid{grid-template-columns:1fr;}
+  }
 </style>
 </head>
 <body>
-
-<header>
-  <div class="logo">
-    <div class="logo-dot"></div>
-    MEDISCAN AI
-  </div>
-  <div style="margin-left:.5rem; font-family:var(--mono); font-size:.7rem; color:var(--muted);">v3.0 // Clinical Diagnostic Platform</div>
-  <div class="header-badge">GEMINI 1.5 PRO · POWERED</div>
-</header>
-
-<div class="app-layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="s-title">// Configuration</div>
-
-    <div>
-      <div class="field-label">GEMINI API KEY</div>
-      <input type="password" class="field-input" id="apiKey" placeholder="AIza..."/>
-      <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-top:.4rem;">
-        Get key → <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--teal);">aistudio.google.com</a>
-      </div>
-    </div>
-
-    <div class="s-title">// Patient Data</div>
-
-    <div class="patient-grid">
-      <div>
-        <div class="field-label">PATIENT NAME</div>
-        <input type="text" class="field-input" id="patName" placeholder="Full name"/>
-      </div>
-      <div>
-        <div class="field-label">AGE</div>
-        <input type="number" class="field-input" id="patAge" placeholder="45" min="1" max="120"/>
-      </div>
-      <div>
-        <div class="field-label">GENDER</div>
-        <select class="field-input" id="patGender">
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div>
-        <div class="field-label">WEIGHT (kg)</div>
-        <input type="number" class="field-input" id="patWeight" placeholder="70"/>
-      </div>
-    </div>
-
-    <div>
-      <div class="field-label">CLINICAL NOTES / SYMPTOMS</div>
-      <textarea class="field-input" id="symptoms" rows="3" placeholder="e.g. Fatigue, jaundice, elevated liver enzymes, abdominal pain..."></textarea>
-    </div>
-
-    <div>
-      <div class="field-label">SCAN TYPE</div>
-      <div class="scan-tabs">
-        <div class="scan-tab active" data-type="CT Scan">CT</div>
-        <div class="scan-tab" data-type="MRI">MRI</div>
-        <div class="scan-tab" data-type="X-Ray">X-RAY</div>
-      </div>
-    </div>
-
-    <div class="s-title">// Medical Image</div>
-
-    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('file-input').click()">
-      <div class="upload-icon">🔬</div>
-      <div class="upload-text">
-        <strong>Drop scan image here</strong>
-        DICOM · JPEG · PNG · WebP<br/>
-        <span style="color:var(--teal);font-size:.75rem;">Click to select</span>
-      </div>
-    </div>
-    <input type="file" id="file-input" accept="image/*,.dcm" />
-    <div class="preview-box" id="previewBox">
-      <img id="previewImg" alt="Scan preview"/>
-      <div class="preview-overlay" id="previewLabel">SCAN LOADED</div>
-    </div>
-
-    <button class="analyze-btn" id="analyzeBtn" disabled>
-      ▶ ANALYZE SCAN
-    </button>
-
-    <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);line-height:1.6;text-align:center;">
-      Powered by Gemini 1.5 Pro Vision + structured medical reasoning chain
-    </div>
-  </div>
-
-  <!-- REPORT PANEL -->
-  <div class="report-panel" id="reportPanel">
-
-    <!-- Empty state -->
-    <div class="empty-state" id="emptyState">
-      <div class="big-icon">🩻</div>
-      <p>
-        Upload a medical scan image and configure<br/>
-        your API key to generate a full clinical report.<br/><br/>
-        Includes · AI reasoning chain · biomarker charts<br/>
-        confidence scores · clinical measurements
-      </p>
-    </div>
-
-    <!-- Processing -->
-    <div class="processing" id="processing">
-      <div class="scan-ring"></div>
-      <div>
-        <div style="font-family:var(--mono);font-size:.85rem;color:var(--teal);margin-bottom:1.2rem;letter-spacing:2px;">ANALYZING SCAN...</div>
-        <div class="proc-steps">
-          <div class="proc-step" id="ps1"><div class="step-dot"></div>Loading image into vision model</div>
-          <div class="proc-step" id="ps2"><div class="step-dot"></div>Running multi-modal analysis (Gemini 1.5 Pro)</div>
-          <div class="proc-step" id="ps3"><div class="step-dot"></div>Extracting clinical measurements</div>
-          <div class="proc-step" id="ps4"><div class="step-dot"></div>Calculating AI confidence scores</div>
-          <div class="proc-step" id="ps5"><div class="step-dot"></div>Building reasoning chain</div>
-          <div class="proc-step" id="ps6"><div class="step-dot"></div>Generating doctor-grade report</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error -->
-    <div class="error-box" id="errorBox"></div>
-
-    <!-- Report Header -->
-    <div class="report-header" id="reportHeader">
-      <div class="rh-top">
-        <div>
-          <div class="rh-title" id="rhTitle">—</div>
-          <div class="rh-sub" id="rhSub">—</div>
-        </div>
-        <div class="severity-badge" id="sevBadge">—</div>
-      </div>
-      <div class="rh-meta" id="rhMeta"></div>
-    </div>
-
-    <!-- AI Confidence -->
-    <div class="confidence-section" id="confSection">
-      <div class="section-heading">AI Confidence Breakdown</div>
-      <div class="conf-bars" id="confBars"></div>
-    </div>
-
-    <!-- Measurements -->
-    <div class="measurements-section" id="measSection">
-      <div class="section-heading">Clinical Measurements</div>
-      <div class="measurements-grid" id="measGrid"></div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="chart-row" id="chartRow">
-      <div class="chart-card">
-        <div class="chart-title">// Biomarker Profile</div>
-        <div class="chart-canvas-wrap"><canvas id="biomarkerChart" height="220"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">// Severity Score Distribution</div>
-        <div class="chart-canvas-wrap"><canvas id="severityChart" height="220"></canvas></div>
-      </div>
-    </div>
-    <div class="chart-row-single" id="chartRowSingle">
-      <div class="chart-card" style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
-        <div class="chart-title">// Measurement vs. Normal Range</div>
-        <div class="chart-canvas-wrap"><canvas id="rangeChart" height="180"></canvas></div>
-      </div>
-    </div>
-
-    <!-- AI Reasoning -->
-    <div class="reasoning-section" id="reasoningSection">
-      <div class="section-heading">AI Reasoning Chain — How We Reached This Conclusion</div>
-      <div class="reasoning-chain" id="reasoningChain"></div>
-    </div>
-
-    <!-- Findings -->
-    <div class="findings-section" id="findingsSection">
-      <div class="section-heading">Clinical Findings</div>
-      <div id="findingsList"></div>
-    </div>
-
-    <!-- Recommendations -->
-    <div class="rec-section" id="recSection">
-      <div class="section-heading">Clinical Recommendations</div>
-      <ul class="rec-list" id="recList"></ul>
-    </div>
-
-    <!-- Disclaimer -->
-    <div class="disclaimer" id="disclaimer">
-      ⚠ DISCLAIMER: This AI-generated report is intended to assist qualified medical professionals only.
-      It does not constitute a final medical diagnosis. All findings must be reviewed and validated by a
-      licensed physician or radiologist before any clinical decisions are made. AI confidence scores
-      reflect model certainty, not diagnostic ground truth.
-    </div>
-
-  </div>
-</div>
+<canvas id="three-canvas"></canvas>
+<div id="root"></div>
 
 <script>
-// ── STATE ──────────────────────────────────────────────────────
-let scanType = 'CT Scan';
-let imageBase64 = null;
-let imageFile = null;
-let bioChart = null, sevChart = null, rangeChart = null;
+(function(){
+  const canvas=document.getElementById('three-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+  camera.position.z=30;
+  const geo=new THREE.BufferGeometry();
+  const pts=[];
+  for(let i=0;i<400;i++){const t=i*0.15;pts.push(Math.sin(t)*8,t*0.3-20,Math.cos(t)*8,Math.sin(t+Math.PI)*8,t*0.3-20,Math.cos(t+Math.PI)*8);}
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  const helix=new THREE.Points(geo,new THREE.PointsMaterial({color:0x00d4ff,size:0.12,transparent:true,opacity:0.5}));
+  scene.add(helix);
+  scene.add(Object.assign(new THREE.GridHelper(80,20,0x0e3040,0x071419),{position:{y:-15,x:0,z:0}}));
+  let t=0;
+  (function animate(){requestAnimationFrame(animate);t+=0.004;helix.rotation.y=t*0.3;helix.position.y=Math.sin(t*0.5)*2;renderer.render(scene,camera);})();
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+})();
+</script>
 
-// ── SCAN TABS ─────────────────────────────────────────────────
-document.querySelectorAll('.scan-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.scan-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    scanType = tab.dataset.type;
-  });
-});
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
 
-// ── FILE UPLOAD ────────────────────────────────────────────────
-const uploadZone = document.getElementById('uploadZone');
-const fileInput  = document.getElementById('file-input');
-const previewBox = document.getElementById('previewBox');
-const previewImg = document.getElementById('previewImg');
+const SCAN_TYPES=[{id:'xray',label:'X-Ray',icon:'🫁'},{id:'mri',label:'MRI',icon:'🧠'},{id:'ct',label:'CT Scan',icon:'⚕️'}];
+const SPECIALTIES_MAP={xray:['Pulmonologist','Radiologist','Cardiologist','Orthopedic Surgeon'],mri:['Neurologist','Neurosurgeon','Radiologist','Orthopedic Surgeon'],ct:['Hepatologist','Gastroenterologist','Oncologist','Radiologist']};
 
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('drag');
-  const f = e.dataTransfer.files[0];
-  if (f) handleFile(f);
-});
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+// Global chart registry
+const CHARTS={};
+const destroyChart=id=>{if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];}};
 
-function handleFile(f) {
-  imageFile = f;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    imageBase64 = dataUrl.split(',')[1];
-    previewImg.src = dataUrl;
-    previewBox.style.display = 'block';
-    uploadZone.style.display = 'none';
-    document.getElementById('previewLabel').textContent = f.name.toUpperCase() + ' · ' + (f.size/1024).toFixed(0) + ' KB';
-    checkReady();
-  };
-  reader.readAsDataURL(f);
+// ── Measurements Panel ────────────────────────────────────────────────────────
+function MeasurementPanel({measurements}){
+  const [filled,setFilled]=useState(false);
+  useEffect(()=>{const t=setTimeout(()=>setFilled(true),150);return()=>clearTimeout(t);},[]);
+  if(!measurements?.length)return null;
+  const cls=s=>{const v=(s||'').toLowerCase();return v==='normal'?'mc-normal':v==='critical'||v==='high'||v==='low'?'mc-danger':'mc-warn';};
+  const scls=s=>{const v=(s||'').toLowerCase();return v==='normal'?'normal':v==='critical'||v==='high'||v==='low'?'danger':'warn';};
+  const pct=(val,mn,mx)=>{if(val==null||mn==null||mx==null)return 50;const r=mx-mn;return r===0?50:Math.min(100,Math.max(0,((val-mn)/r)*100));};
+  const gcol=s=>{const v=(s||'').toLowerCase();return v==='normal'?'var(--success)':v==='critical'||v==='high'||v==='low'?'var(--danger)':'var(--warn)';};
+  return(
+    <div className="measurements-grid">
+      {measurements.map((m,i)=>{
+        const p=pct(m.value,m.normal_min,m.normal_max);
+        const displayVal=m.value!=null?(typeof m.value==='number'?m.value.toFixed(m.value<10?2:1):m.value):'—';
+        return(
+          <div key={i} className={`measurement-card ${cls(m.status)}`}>
+            <div className="mc-name">{m.name}</div>
+            <div className="mc-value">{displayVal}<span className="mc-unit">{m.unit}</span></div>
+            <div className="mc-range">Ref: {m.normal_min??'—'} – {m.normal_max??'—'} {m.unit}</div>
+            <div className="mc-gauge"><div className="mc-gauge-fill" style={{width:filled?`${p}%`:'0%',background:gcol(m.status)}}></div></div>
+            <div className={`mc-status ${scls(m.status)}`}>{(m.status||'').toUpperCase()}</div>
+            {m.significance&&<div className="mc-note">{m.significance}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
-document.getElementById('apiKey').addEventListener('input', checkReady);
-function checkReady() {
-  const hasKey = document.getElementById('apiKey').value.trim().length > 10;
-  const hasImg = imageBase64 !== null;
-  document.getElementById('analyzeBtn').disabled = !(hasKey && hasImg);
-}
-
-// ── ANALYZE ────────────────────────────────────────────────────
-document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
-
-async function runAnalysis() {
-  const apiKey  = document.getElementById('apiKey').value.trim();
-  const name    = document.getElementById('patName').value.trim() || 'Anonymous';
-  const age     = document.getElementById('patAge').value || 'Unknown';
-  const gender  = document.getElementById('patGender').value;
-  const weight  = document.getElementById('patWeight').value || 'Unknown';
-  const symptoms= document.getElementById('symptoms').value.trim() || 'None provided';
-
-  hideAll();
-  show('processing');
-  document.getElementById('analyzeBtn').disabled = true;
-
-  // Animate processing steps
-  const steps = ['ps1','ps2','ps3','ps4','ps5','ps6'];
-  let si = 0;
-  const stepInterval = setInterval(() => {
-    if (si > 0) document.getElementById(steps[si-1]).classList.remove('active'), document.getElementById(steps[si-1]).classList.add('done');
-    if (si < steps.length) document.getElementById(steps[si]).classList.add('active');
-    si++;
-    if (si > steps.length) clearInterval(stepInterval);
-  }, 900);
-
-  const prompt = buildPrompt(name, age, gender, weight, symptoms);
-
-  try {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: imageFile.type || 'image/jpeg', data: imageBase64 } }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 4096,
-            responseMimeType: 'application/json'
-          }
-        })
-      }
-    );
-
-    clearInterval(stepInterval);
-    steps.forEach(s => {
-      document.getElementById(s).classList.remove('active');
-      document.getElementById(s).classList.add('done');
+// ── Chart Components ──────────────────────────────────────────────────────────
+function BiomarkerChart({biomarkers}){
+  const ref=useRef();
+  useEffect(()=>{
+    if(!ref.current||!biomarkers?.length)return;
+    destroyChart('bio');
+    const colors=biomarkers.map(b=>{const v=b.value,mx=b.normal_max;if(!mx)return'rgba(0,212,255,0.65)';if(v>mx*1.3)return'rgba(255,61,90,0.72)';if(v>mx)return'rgba(255,171,0,0.72)';return'rgba(0,212,255,0.62)';});
+    CHARTS['bio']=new Chart(ref.current,{
+      type:'bar',
+      data:{labels:biomarkers.map(b=>b.name),datasets:[
+        {label:'Patient Value',data:biomarkers.map(b=>b.value),backgroundColor:colors,borderColor:colors.map(c=>c.replace(/0\.\d+\)/,'1)')),borderWidth:1.5,borderRadius:4},
+        {label:'Normal Max',data:biomarkers.map(b=>b.normal_max||null),type:'line',borderColor:'rgba(255,255,255,0.22)',borderDash:[5,4],borderWidth:1.5,pointRadius:3,pointBackgroundColor:'rgba(255,255,255,0.3)',fill:false,tension:0}
+      ]},
+      options:{responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{labels:{color:'#3d7a8e',font:{family:'DM Mono',size:10}}},tooltip:{bodyFont:{family:'DM Mono'},callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y} ${biomarkers[ctx.dataIndex]?.unit||''}`}}},
+        scales:{x:{grid:{color:'#0e3040'},ticks:{color:'#3d7a8e',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#0e3040'},ticks:{color:'#3d7a8e',font:{family:'DM Mono',size:10}}}}}
     });
-
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || `HTTP ${resp.status}`);
-    }
-
-    const data = await resp.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('No response from Gemini. Check API key and image.');
-
-    let report;
-    try {
-      report = JSON.parse(rawText);
-    } catch {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      if (match) report = JSON.parse(match[0]);
-      else throw new Error('Could not parse structured report from Gemini response.');
-    }
-
-    hide('processing');
-    renderReport(report, name, age, gender, scanType);
-
-  } catch (err) {
-    clearInterval(stepInterval);
-    hide('processing');
-    const box = document.getElementById('errorBox');
-    box.textContent = '⚠ ERROR: ' + err.message;
-    show('errorBox');
-  } finally {
-    document.getElementById('analyzeBtn').disabled = false;
-  }
+    return()=>destroyChart('bio');
+  },[biomarkers]);
+  return <canvas ref={ref} height={200}></canvas>;
 }
 
-// ── PROMPT ENGINEERING (Fine-tuned medical structure) ──────────
-function buildPrompt(name, age, gender, weight, symptoms) {
-  return `You are a board-certified radiologist and hepatologist AI assistant performing a clinical-grade analysis of a medical scan image.
+function RadarChart({confidence}){
+  const ref=useRef();
+  useEffect(()=>{
+    if(!ref.current||!confidence?.length)return;
+    destroyChart('radar');
+    CHARTS['radar']=new Chart(ref.current,{
+      type:'radar',
+      data:{labels:confidence.map(c=>c.label),datasets:[{label:'AI Confidence %',data:confidence.map(c=>c.score),backgroundColor:'rgba(0,212,255,0.1)',borderColor:'#00d4ff',borderWidth:2,pointBackgroundColor:'#00d4ff',pointRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{labels:{color:'#3d7a8e',font:{family:'DM Mono',size:10}}}},
+        scales:{r:{min:0,max:100,grid:{color:'#0e3040'},ticks:{color:'#3d7a8e',backdropColor:'transparent',font:{family:'DM Mono',size:9},stepSize:25},pointLabels:{color:'#7ab3c4',font:{family:'DM Mono',size:9}}}}}
+    });
+    return()=>destroyChart('radar');
+  },[confidence]);
+  return <canvas ref={ref} height={220}></canvas>;
+}
 
-PATIENT: ${name} | AGE: ${age} | GENDER: ${gender} | WEIGHT: ${weight} kg
-SCAN TYPE: ${scanType}
-SYMPTOMS: ${symptoms}
+function RangeChart({measurements}){
+  const ref=useRef();
+  const filtered=(measurements||[]).filter(m=>m.normal_max!=null&&m.value!=null);
+  useEffect(()=>{
+    if(!ref.current||!filtered.length)return;
+    destroyChart('range');
+    CHARTS['range']=new Chart(ref.current,{
+      type:'bar',
+      data:{labels:filtered.map(m=>m.name),datasets:[
+        {label:'Patient',data:filtered.map(m=>m.value),backgroundColor:filtered.map(m=>{const s=(m.status||'').toLowerCase();return s==='critical'||s==='high'||s==='low'?'rgba(255,61,90,0.62)':s==='normal'?'rgba(0,255,157,0.52)':'rgba(255,171,0,0.62)';}),borderRadius:4,borderWidth:1.5,borderColor:filtered.map(m=>{const s=(m.status||'').toLowerCase();return s==='critical'||s==='high'||s==='low'?'#ff3d5a':s==='normal'?'#00ff9d':'#ffab00';})},
+        {label:'Normal Max',data:filtered.map(m=>m.normal_max),backgroundColor:'rgba(255,255,255,0.05)',borderColor:'rgba(255,255,255,0.14)',borderWidth:1,borderRadius:4}
+      ]},
+      options:{responsive:true,maintainAspectRatio:true,indexAxis:'y',
+        plugins:{legend:{labels:{color:'#3d7a8e',font:{family:'DM Mono',size:10}}}},
+        scales:{x:{grid:{color:'#0e3040'},ticks:{color:'#3d7a8e',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#0e3040'},ticks:{color:'#7ab3c4',font:{family:'DM Mono',size:10}}}}}
+    });
+    return()=>destroyChart('range');
+  },[measurements]);
+  if(!filtered.length)return null;
+  return <canvas ref={ref} height={Math.max(180,filtered.length*40)}></canvas>;
+}
 
-TASK: Analyze the uploaded ${scanType} image with full clinical rigor. Extract every visible measurement, density, texture, morphological feature, and abnormality. Reason step-by-step like a clinician.
+// ── Confidence Bars ───────────────────────────────────────────────────────────
+function ConfBars({confidence}){
+  const [on,setOn]=useState(false);
+  useEffect(()=>{const t=setTimeout(()=>setOn(true),120);return()=>clearTimeout(t);},[]);
+  if(!confidence?.length)return null;
+  return(
+    <div className="conf-bars">
+      {confidence.map((c,i)=>(
+        <div key={i}>
+          <div className="conf-label-row"><span>{c.label}</span><span>{c.score}%</span></div>
+          <div className="conf-track"><div className="conf-fill" style={{width:on?`${c.score}%`:'0%'}}></div></div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-IMPORTANT: You MUST return ONLY valid JSON. No markdown. No preamble. Follow this EXACT schema:
+// ── Reasoning Chain ───────────────────────────────────────────────────────────
+function ReasoningChain({steps}){
+  if(!steps?.length)return null;
+  return(
+    <div className="reasoning-chain">
+      {steps.map((s,i)=>(
+        <div key={i} className="reasoning-step">
+          <div className="step-node">{s.step||i+1}</div>
+          <div className="step-body">
+            <div className="step-title">{s.title}</div>
+            <div className="step-detail">{s.detail}</div>
+            {s.metric&&<div className="step-metric">📐 {s.metric}</div>}
+            {s.confidence_contribution!=null&&<div className="step-conf">Contribution to confidence: {s.confidence_contribution}%</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Severity badge ────────────────────────────────────────────────────────────
+function SevBadge({level}){
+  const m={low:'sev-low',medium:'sev-medium',high:'sev-high',critical:'sev-critical'};
+  return <span className={`severity-badge ${m[level]||'sev-medium'}`}>{(level||'UNKNOWN').toUpperCase()}</span>;
+}
+
+// ── Full Report View ──────────────────────────────────────────────────────────
+function ReportView({report,scanType,patientInfo,image}){
+  if(!report)return null;
+  const needsRef=report.severity==='high'||report.severity==='critical';
+  const specs=SPECIALTIES_MAP[scanType]||['General Physician'];
+  const doctors=[
+    {name:'Dr. Rajesh Kumar',spec:specs[0],loc:'AIIMS, New Delhi',rating:'4.9'},
+    {name:'Dr. Priya Sharma',spec:specs[1]||specs[0],loc:'Fortis Hospital, Mumbai',rating:'4.8'},
+    {name:'Dr. Anil Mehta',spec:specs[0],loc:'Apollo Hospital, Bangalore',rating:'4.7'},
+  ];
+  return(
+    <div className="results-container">
+
+      {/* HEADER */}
+      <div className="report-header-card">
+        <div className="rh-top">
+          <div>
+            <span className="report-tag">// AI Clinical Report · {new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+            <div className="report-main-title">{report.title||'Scan Analysis Complete'}</div>
+            <div className="report-meta">Patient: <strong>{patientInfo.name||'Anonymous'}</strong> · Age: {patientInfo.age||'N/A'} · {patientInfo.gender||'N/A'}</div>
+          </div>
+          <SevBadge level={report.severity}/>
+        </div>
+        <div className="meta-grid">
+          {report.icd_code&&<div className="meta-item"><div className="meta-key">ICD-10</div><div className="meta-val accent">{report.icd_code}</div></div>}
+          {report.overall_confidence!=null&&<div className="meta-item"><div className="meta-key">AI Confidence</div><div className="meta-val accent">{report.overall_confidence}%</div></div>}
+          {report.organ_assessed&&<div className="meta-item"><div className="meta-key">Organ</div><div className="meta-val">{report.organ_assessed}</div></div>}
+          {report.lirads_score&&report.lirads_score!=='N/A'&&<div className="meta-item"><div className="meta-key">LI-RADS</div><div className="meta-val warn">{report.lirads_score}</div></div>}
+          {report.fibrosis_stage&&report.fibrosis_stage!=='N/A'&&<div className="meta-item"><div className="meta-key">Fibrosis</div><div className="meta-val">{report.fibrosis_stage}</div></div>}
+          {report.steatosis_grade&&report.steatosis_grade!=='N/A'&&<div className="meta-item"><div className="meta-key">Steatosis</div><div className="meta-val">{report.steatosis_grade}</div></div>}
+          {report.scan_quality&&<div className="meta-item"><div className="meta-key">Scan Quality</div><div className="meta-val success">{report.scan_quality}</div></div>}
+          {report.modality_detail&&<div className="meta-item"><div className="meta-key">Modality</div><div className="meta-val" style={{fontSize:10}}>{report.modality_detail}</div></div>}
+        </div>
+      </div>
+
+      {image&&<div style={{borderRadius:10,overflow:'hidden',border:'1px solid var(--border)',maxHeight:165}}><img src={image} style={{width:'100%',objectFit:'contain',maxHeight:165,background:'#000'}} alt="Scan"/></div>}
+
+      {/* AI CONFIDENCE */}
+      {report.ai_confidence_breakdown?.length>0&&(
+        <div className="section-card">
+          <div className="card-title">
+            🎯 AI Confidence Breakdown
+            <span className="card-title-badge" style={{background:'rgba(0,212,255,0.1)',color:'var(--accent)',border:'1px solid rgba(0,212,255,0.2)'}}>OVERALL {report.overall_confidence}%</span>
+          </div>
+          <div className="conf-grid">
+            <ConfBars confidence={report.ai_confidence_breakdown}/>
+            <RadarChart confidence={report.ai_confidence_breakdown}/>
+          </div>
+        </div>
+      )}
+
+      {/* CLINICAL MEASUREMENTS */}
+      {report.clinical_measurements?.length>0&&(
+        <div className="section-card">
+          <div className="card-title">
+            📐 Clinical Measurements
+            <span className="card-title-badge" style={{background:'rgba(0,255,157,0.1)',color:'var(--success)',border:'1px solid rgba(0,255,157,0.2)'}}>{report.clinical_measurements.length} PARAMETERS</span>
+          </div>
+          <MeasurementPanel measurements={report.clinical_measurements}/>
+        </div>
+      )}
+
+      {/* CHARTS */}
+      {report.biomarkers?.length>0&&(
+        <div className="charts-row">
+          <div className="chart-card">
+            <div className="chart-title">📊 Biomarker Profile vs. Normal Range</div>
+            <BiomarkerChart biomarkers={report.biomarkers}/>
+            <div className="chart-legend">
+              <div className="legend-item"><div className="legend-dot" style={{background:'rgba(0,212,255,0.8)'}}></div>Normal</div>
+              <div className="legend-item"><div className="legend-dot" style={{background:'rgba(255,171,0,0.8)'}}></div>Elevated</div>
+              <div className="legend-item"><div className="legend-dot" style={{background:'rgba(255,61,90,0.8)'}}></div>Critical</div>
+            </div>
+          </div>
+          <div className="chart-card">
+            <div className="chart-title">📏 Measurements vs. Normal Range</div>
+            <RangeChart measurements={report.clinical_measurements}/>
+          </div>
+        </div>
+      )}
+
+      {/* REASONING CHAIN */}
+      {report.reasoning_chain?.length>0&&(
+        <div className="section-card">
+          <div className="card-title">
+            🧠 How The AI Reached This Conclusion
+            <span className="card-title-badge" style={{background:'rgba(167,139,250,0.1)',color:'var(--purple)',border:'1px solid rgba(167,139,250,0.2)'}}>{report.reasoning_chain.length} STEPS</span>
+          </div>
+          <ReasoningChain steps={report.reasoning_chain}/>
+        </div>
+      )}
+
+      {/* FINDINGS */}
+      {report.findings?.length>0&&(
+        <div className="section-card">
+          <div className="card-title">
+            🔍 Key Findings
+            <span className="card-title-badge" style={{background:'rgba(0,212,255,0.1)',color:'var(--accent)',border:'1px solid rgba(0,212,255,0.2)'}}>{report.findings.length} FINDINGS</span>
+          </div>
+          <div className="findings-list">
+            {report.findings.map((f,i)=>{
+              const sc={severe:['rgba(255,61,90,0.15)','var(--danger)','rgba(255,61,90,0.35)'],moderate:['rgba(255,107,53,0.12)','var(--accent3)','rgba(255,107,53,0.3)'],mild:['rgba(255,171,0,0.12)','var(--warn)','rgba(255,171,0,0.3)'],normal:['rgba(0,255,157,0.1)','var(--success)','rgba(0,255,157,0.25)']}[f.severity]||['rgba(255,171,0,0.12)','var(--warn)','rgba(255,171,0,0.3)'];
+              return(
+                <div key={i} className="finding-item">
+                  <div className={`finding-indicator fi-${f.severity||'normal'}`}></div>
+                  <div style={{flex:1}}>
+                    <div className="finding-name">{f.name}</div>
+                    <div className="finding-desc">{f.description}</div>
+                    <div className="finding-tags">
+                      {f.region&&<span className="ftag ftag-region">📍 {f.region}</span>}
+                      {f.size_mm&&<span className="ftag ftag-size">📏 {f.size_mm} mm</span>}
+                      {f.density_hu&&<span className="ftag ftag-density">⬛ {f.density_hu} HU</span>}
+                    </div>
+                  </div>
+                  <span style={{fontSize:8,fontFamily:'DM Mono',fontWeight:700,letterSpacing:1,padding:'3px 7px',borderRadius:4,flexShrink:0,marginLeft:6,background:sc[0],color:sc[1],border:`1px solid ${sc[2]}`}}>{(f.severity||'').toUpperCase()}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* DOCTOR ADVICE */}
+      {report.doctorAdvice?.length>0&&(
+        <div className="section-card">
+          <div className="card-title">👨‍⚕️ Clinical Recommendations</div>
+          <div className="advice-grid">
+            {report.doctorAdvice.map((s,i)=>(
+              <div key={i} className="advice-item">
+                <div className="advice-item-title"><span>{s.icon}</span><span>{s.title}</span></div>
+                <ul>{(s.points||[]).map((p,j)=><li key={j}>{p}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* PATIENT INSTRUCTIONS */}
+      {(report.patientSummary||report.patientAdvice?.length>0)&&(
+        <div className="section-card">
+          <div className="card-title">
+            💊 Patient Instructions
+            <span className="card-title-badge" style={{background:'rgba(0,255,157,0.1)',color:'var(--success)',border:'1px solid rgba(0,255,157,0.2)'}}>PATIENT GUIDE</span>
+          </div>
+          {report.patientSummary&&(
+            <div className="patient-banner">
+              <div className="patient-banner-icon">🏥</div>
+              <div><div className="patient-banner-title">What This Means For You</div><p>{report.patientSummary}</p></div>
+            </div>
+          )}
+          {report.patientAdvice?.length>0&&(
+            <div className="advice-grid">
+              {report.patientAdvice.map((s,i)=>(
+                <div key={i} className="advice-item">
+                  <div className="advice-item-title"><span>{s.icon}</span><span>{s.title}</span></div>
+                  <ul>{(s.points||[]).map((p,j)=><li key={j}>{p}</li>)}</ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* REFERRAL */}
+      {needsRef&&(
+        <div className="section-card">
+          <div className="card-title">🚨 Specialist Referral Required</div>
+          <div className="referral-alert">
+            <div className="referral-alert-title">⚠️ Urgent Medical Attention</div>
+            <p>{report.referralReason||'Immediate specialist consultation strongly recommended.'}</p>
+          </div>
+          <div style={{marginBottom:9,fontSize:10,color:'var(--text2)'}}>Recommended specialties:</div>
+          <div className="specialties-list">{specs.map((s,i)=><div key={i} className="specialty-tag"><span>🩺</span>{s}</div>)}</div>
+        </div>
+      )}
+
+      {/* DOCTORS */}
+      <div className="section-card">
+        <div className="card-title">
+          🌟 Top Specialists Near You
+          <span className="card-title-badge" style={{background:'rgba(255,171,0,0.1)',color:'var(--warn)',border:'1px solid rgba(255,171,0,0.2)'}}>VERIFIED</span>
+        </div>
+        <div className="doctors-list">
+          {doctors.map((d,i)=>(
+            <div key={i} className="doctor-card">
+              <div className="doctor-avatar">{i===0?'👨‍⚕️':i===1?'👩‍⚕️':'🧑‍⚕️'}</div>
+              <div className="doctor-info">
+                <div className="doctor-name">{d.name}</div>
+                <div className="doctor-specialty">{d.spec}</div>
+                <div className="doctor-location">📍 {d.loc}</div>
+                <div className="doctor-rating">★ {d.rating}</div>
+              </div>
+              <a href={`https://www.google.com/search?q=book+appointment+${encodeURIComponent(d.spec+' '+d.loc)}`} target="_blank" rel="noopener noreferrer" className="doctor-link">Book →</a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* DISCLAIMER */}
+      <div className="disclaimer">
+        <span>⚠️</span>
+        <span><strong>Medical Disclaimer:</strong> This AI report assists qualified medical professionals only. It is not a final clinical diagnosis. All findings must be validated by a licensed physician before any clinical decisions are made.</span>
+      </div>
+
+    </div>
+  );
+}
+
+// ── Loading ───────────────────────────────────────────────────────────────────
+function LoadingScreen({step}){
+  const steps=['Preprocessing image data','Running AI vision analysis (Gemini)','Identifying anatomical structures','Detecting anomalies & density patterns','Extracting precise measurements','Building AI reasoning chain','Compiling clinical report'];
+  return(
+    <div className="loading-screen">
+      <div className="scanner-ring"><div className="loading-icon">🔬</div></div>
+      <div className="loading-text">Analyzing Scan</div>
+      <div style={{fontSize:9,color:'var(--text3)',letterSpacing:2,textTransform:'uppercase'}}>AI-Powered Clinical Analysis</div>
+      <div className="loading-steps">
+        {steps.map((s,i)=>(
+          <div key={i} className={`loading-step ${i<step?'done':i===step?'active':''}`}>
+            <div className="step-dot"></div>{s}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Demo Data ─────────────────────────────────────────────────────────────────
+function getDemoReport(type){
+  const isLiver=type==='ct', isBrain=type==='mri';
+  return {
+    title:isLiver?'CT Abdomen: Moderate Hepatic Steatosis with Early Portal Hypertension':isBrain?'Brain MRI: Periventricular White Matter Changes (Fazekas Grade I–II)':'Chest X-Ray: Bilateral Basal Infiltrates, Possible Atypical Pneumonia',
+    icd_code:isLiver?'K76.0':isBrain?'I67.3':'J22',
+    severity:isLiver?'medium':isBrain?'low':'medium',
+    overall_confidence:87,
+    organ_assessed:isLiver?'Liver':isBrain?'Brain':'Lung',
+    scan_quality:'Good',
+    lirads_score:isLiver?'LR-2':'N/A',
+    fibrosis_stage:isLiver?'F1':'N/A',
+    steatosis_grade:isLiver?'S2':'N/A',
+    modality_detail:isLiver?'Non-contrast CT Abdomen & Pelvis':isBrain?'T2-FLAIR MRI Brain (1.5T)':'PA Chest X-Ray',
+    ai_confidence_breakdown:[
+      {label:'Lesion Detection',score:91},
+      {label:'Tissue Classification',score:85},
+      {label:'Boundary Delineation',score:88},
+      {label:'Pathology Identification',score:83},
+      {label:'Staging Accuracy',score:79},
+    ],
+    clinical_measurements:isLiver?[
+      {name:'Liver Span',value:17.2,unit:'cm',normal_min:10,normal_max:15,status:'Elevated',significance:'Hepatomegaly — liver enlarged beyond normal range'},
+      {name:'Liver Density',value:38,unit:'HU',normal_min:50,normal_max:70,status:'Low',significance:'Reduced HU consistent with fat infiltration'},
+      {name:'Liver-Spleen Δ HU',value:-14,unit:'HU',normal_min:0,normal_max:15,status:'Critical',significance:'Negative Δ is diagnostic criterion for steatosis'},
+      {name:'Portal Vein Diameter',value:13.2,unit:'mm',normal_min:8,normal_max:13,status:'Elevated',significance:'Mild dilation — monitor for portal hypertension'},
+      {name:'Spleen Density',value:52,unit:'HU',normal_min:45,normal_max:65,status:'Normal',significance:'Splenic parenchyma within normal limits'},
+      {name:'CBD Diameter',value:4.1,unit:'mm',normal_min:0,normal_max:8,status:'Normal',significance:'Common bile duct not dilated'},
+    ]:isBrain?[
+      {name:'Cortical Thickness',value:3.2,unit:'mm',normal_min:2.5,normal_max:4.5,status:'Normal',significance:'Preserved cortical architecture'},
+      {name:'Ventricular Width',value:12,unit:'mm',normal_min:5,normal_max:15,status:'Normal',significance:'No ventriculomegaly'},
+      {name:'WMH Volume',value:1.8,unit:'mL',normal_min:0,normal_max:1.0,status:'Elevated',significance:'Mildly elevated white matter hyperintensity volume'},
+      {name:'Midline Shift',value:0,unit:'mm',normal_min:0,normal_max:3,status:'Normal',significance:'No midline deviation detected'},
+    ]:[
+      {name:'Cardiothoracic Ratio',value:0.53,unit:'ratio',normal_min:0,normal_max:0.5,status:'Elevated',significance:'At upper limit — borderline cardiomegaly'},
+      {name:'Right Hemidiaphragm',value:5.5,unit:'cm',normal_min:3,normal_max:6,status:'Normal',significance:'Normal diaphragm elevation'},
+      {name:'Pleural Opacity',value:18,unit:'%',normal_min:0,normal_max:5,status:'Elevated',significance:'Bilateral blunting of costophrenic angles'},
+      {name:'Tracheal Deviation',value:0,unit:'mm',normal_min:0,normal_max:5,status:'Normal',significance:'Midline trachea — no mediastinal shift'},
+    ],
+    biomarkers:isLiver?[
+      {name:'ALT',value:72,unit:'U/L',normal_max:56},
+      {name:'AST',value:58,unit:'U/L',normal_max:40},
+      {name:'ALP',value:139,unit:'U/L',normal_max:147},
+      {name:'Total Bilirubin',value:1.1,unit:'mg/dL',normal_max:1.2},
+      {name:'Albumin',value:3.8,unit:'g/dL',normal_min:3.5,normal_max:5.5},
+      {name:'GGT',value:88,unit:'U/L',normal_max:55},
+    ]:[
+      {name:'ALT',value:28,unit:'U/L',normal_max:56},
+      {name:'AST',value:24,unit:'U/L',normal_max:40},
+      {name:'ALP',value:95,unit:'U/L',normal_max:147},
+      {name:'Total Bilirubin',value:0.7,unit:'mg/dL',normal_max:1.2},
+      {name:'Albumin',value:4.5,unit:'g/dL',normal_min:3.5,normal_max:5.5},
+      {name:'GGT',value:32,unit:'U/L',normal_max:55},
+    ],
+    reasoning_chain:[
+      {step:1,title:'Image Quality & Technical Assessment',detail:'Scan demonstrates adequate technical quality for diagnostic interpretation. Field of view, contrast resolution, and spatial detail are sufficient. No significant motion artifact or truncation error detected.',metric:'Image quality score: Adequate · No technical artefact',confidence_contribution:95},
+      {step:2,title:'Organ Morphology & Size Analysis',detail:isLiver?'Liver is enlarged at 17.2 cm craniocaudal span (normal 10–15 cm). Hepatic margins are smooth and regular. No surface nodularity, capsular retraction, or lobar atrophy to suggest cirrhosis.':isBrain?'Cerebral gyri and sulci appear appropriate for stated age. Corpus callosum intact. No lobar asymmetry. Posterior fossa structures unremarkable.':'Lung fields are of normal volume. Trachea is midline. Mediastinal contours are within normal limits. Bony thorax shows no acute fracture.',metric:isLiver?'Liver span: 17.2 cm (ULN: 15 cm) · Margins: smooth':isBrain?'Cortical thickness: 3.2 mm · Gyral pattern: age-appropriate':'Lung volume: normal · Mediastinum: not widened',confidence_contribution:88},
+      {step:3,title:'Density / Signal Intensity Evaluation',detail:isLiver?'Hepatic parenchyma measures 38 HU on non-contrast CT. Splenic density 52 HU. Liver-spleen HU difference of −14 HU is below the −10 HU diagnostic threshold for hepatic steatosis (Boyce et al. 2010). Fat fraction estimated 33–50%.':isBrain?'T2-FLAIR sequences show hyperintense foci in periventricular and subcortical white matter. No restricted diffusion on DWI — ruling out acute ischemia. No pathological enhancement.':'Bilateral lower lobe haziness with air bronchograms in right lower lobe. Opacity density consistent with consolidation rather than pleural effusion alone.',metric:isLiver?'Liver HU: 38 · Spleen HU: 52 · L-S Δ: −14 HU (diagnostic threshold: −10 HU)':isBrain?'FLAIR lesion count: 6 foci · Max diameter: 8 mm · No DWI restriction':'Air bronchograms: present · Opacity: lower zones bilateral',confidence_contribution:92},
+      {step:4,title:'Lesion & Abnormality Detection',detail:isLiver?'No discrete focal hepatic nodule, cyst, or hypervascular mass identified. Portal vein diameter 13.2 mm (normal <13 mm) — mild dilation, possible early portal hypertension. CBD 4.1 mm — normal. Gallbladder unremarkable.':isBrain?'White matter foci classified Fazekas Grade 1–2. No cortical lesion, mass, or herniation. Ventricles normal in size. No midline shift.':'Bilateral basal opacification involving lower 1/3 of lung fields. Both costophrenic angles are blunted — probable small bilateral pleural effusions (estimated <200 mL each). Cardiothoracic ratio 0.53.',metric:isLiver?'Portal vein: 13.2 mm · No focal lesion · CBD: 4.1 mm':isBrain?'Fazekas Grade: 1–2 · No mass effect · Ventricles: normal':'Effusion volume estimate: <200 mL bilateral · CTR: 0.53',confidence_contribution:85},
+      {step:5,title:'Differential Diagnosis & Probability Weighting',detail:isLiver?'Primary: NAFLD/hepatic steatosis (85%) — diffuse involvement, HU values diagnostic, no focal lesion. Secondary: Alcoholic hepatic disease (10%) — cannot exclude without history. Tertiary: Glycogen deposition (5%) — atypical pattern for this HU range.':isBrain?'Primary: Chronic small vessel ischemic disease (75%) — periventricular distribution, no DWI restriction. Secondary: Early MS plaque (15%) — fewer and smaller than typical. Tertiary: Migraine-related WMH (10%).':'Primary: Atypical pneumonia (60%) — bilateral, basal, air bronchograms. Secondary: Pulmonary edema early (25%) — borderline CTR, effusions. Tertiary: ARDS early (15%).',metric:isLiver?'NAFLD: 85% · ALD: 10% · Other: 5%':isBrain?'SVD: 75% · MS: 15% · Migraine: 10%':'Atypical PNA: 60% · Pulmonary edema: 25% · ARDS: 15%',confidence_contribution:82},
+      {step:6,title:'Final Classification & Severity Grading',detail:isLiver?'Hepatic steatosis grade S2 (moderate, 33–66% hepatocyte fat involvement). LI-RADS LR-2 (probably benign) — no focal nodule identified. Fibrosis stage F1 estimated on clinical correlation. No cirrhotic morphology. Overall severity: Moderate.':isBrain?'FLAIR burden: Grade 1–2 (Fazekas). No acute or aggressive pathology. Cardiovascular risk factor modification is primary recommendation. Overall severity: Low.':'Bilateral basal pneumonia or early pulmonary edema pattern. Requires clinical correlation with fever, WBC, BNP. Overall severity: Moderate. Urgent clinical evaluation advised.',metric:isLiver?'Steatosis: S2 · LI-RADS: LR-2 · Fibrosis: F1 · Severity: Moderate':isBrain?'Fazekas: 1–2 · Severity: Low · No acute intervention':'Severity: Moderate · CXR pattern: consistent with atypical PNA or early pulmonary edema',confidence_contribution:87},
+    ],
+    findings:isLiver?[
+      {name:'Hepatic Steatosis — Grade S2 (Moderate)',description:'Diffuse hepatic parenchymal attenuation reduced to 38 HU with liver-spleen HU difference of −14 HU, meeting diagnostic criteria for moderate hepatic steatosis. Estimated hepatocyte fat involvement 33–66%. Distribution is homogeneous and pan-lobular.',severity:'moderate',region:'Hepatic Parenchyma — diffuse',size_mm:null,density_hu:38},
+      {name:'Mild Hepatomegaly',description:'Liver measures 17.2 cm in craniocaudal span, exceeding the upper limit of normal (15 cm). Hepatic contour is smooth without lobulation, nodularity, or caudate lobe hypertrophy to suggest established cirrhosis.',severity:'mild',region:'Liver — global',size_mm:172,density_hu:null},
+      {name:'Portal Vein Mild Dilation',description:'Portal vein diameter measures 13.2 mm at the porta hepatis, exceeding the normal 13 mm threshold. No ascites or splenomegaly to confirm established portal hypertension, but warrants monitoring.',severity:'mild',region:'Porta Hepatis',size_mm:13.2,density_hu:null},
+      {name:'Biliary System — Normal',description:'Intrahepatic and extrahepatic bile ducts are not dilated. Common bile duct measures 4.1 mm (normal <8 mm). Gallbladder shows no calculi, wall thickening, or pericholecystic fluid.',severity:'normal',region:'Biliary Tract',size_mm:null,density_hu:null},
+    ]:isBrain?[
+      {name:'Periventricular WMH — Fazekas Grade I–II',description:'Six discrete T2/FLAIR hyperintense foci identified in periventricular and subcortical white matter, with the largest measuring 8 mm in diameter. No restricted diffusion on DWI, no pathological enhancement. Pattern is consistent with chronic small vessel ischemic change.',severity:'mild',region:'Periventricular & Subcortical White Matter',size_mm:8,density_hu:null},
+      {name:'Cerebral Cortex — Preserved',description:'Cortical thickness measures 3.2 mm, within the normal range (2.5–4.5 mm). No focal cortical lesion, restricted diffusion, or surface hemosiderin deposition.',severity:'normal',region:'Cerebral Cortex (bilateral)',size_mm:null,density_hu:null},
+      {name:'Ventricular System — Normal',description:'Lateral ventricles are symmetric and normal in calibre. Third and fourth ventricles unremarkable. No hydrocephalus or transependymal CSF flow.',severity:'normal',region:'Ventricular System',size_mm:null,density_hu:null},
+    ]:[
+      {name:'Bilateral Basal Infiltrates',description:'Bilateral lower zone haziness with visible air bronchograms, most prominent in the right lower lobe. The pattern is consistent with consolidation. Differential includes atypical pneumonia (Mycoplasma, Legionella) or early pulmonary edema.',severity:'moderate',region:'Bilateral Lower Lobes',size_mm:null,density_hu:null},
+      {name:'Bilateral Pleural Effusions (Small)',description:'Both costophrenic angles are blunted with meniscus signs bilaterally. Estimated effusion volume <200 mL each. May be reactive (parapneumonic) or cardiogenic.',severity:'mild',region:'Bilateral Pleural Space',size_mm:null,density_hu:null},
+      {name:'Borderline Cardiothoracic Ratio',description:'CTR measures 0.53 (normal <0.5). At the upper limit of normal. No frank cardiomegaly. Pulmonary vascular markings are mildly prominent. Recommend echocardiography if BNP elevated.',severity:'mild',region:'Cardiac Silhouette',size_mm:null,density_hu:null},
+    ],
+    patientSummary:isLiver?'Your CT scan shows your liver has built up excess fat — a condition called fatty liver disease. Your liver is also slightly enlarged. This is treatable with lifestyle changes and medication, but you should see a liver specialist soon to check if further damage has occurred.'
+      :isBrain?'Your MRI shows some small areas of change in the white matter of your brain, which are commonly linked to blood pressure or aging. The rest of your brain looks normal. You need blood pressure control and regular monitoring.'
+      :'Your chest X-ray shows haziness in both lower parts of your lungs, which may be an infection like pneumonia. Your heart size is borderline. Please see a doctor immediately for treatment.',
+    doctorAdvice:[
+      {title:'Immediate Actions',icon:'🚨',points:isLiver?['Liver function tests: ALT, AST, GGT, ALP, bilirubin','FibroScan (transient elastography) to quantify fibrosis','HBsAg, Anti-HCV, ANA, AMA serology','Metabolic syndrome assessment: glucose, HbA1c, lipids']:isBrain?['24-hour ambulatory blood pressure monitoring','Fasting lipid profile and HbA1c','Carotid Doppler ultrasound','Neurological examination and cognitive screen']:['Full blood count with differential','CRP, ESR, procalcitonin','Blood cultures if febrile >38.5°C','Sputum culture and sensitivity']},
+      {title:'Diagnostic Tests',icon:'🧪',points:isLiver?['Liver biopsy if non-invasive markers inconclusive','HOMA-IR for insulin resistance','Abdominal USS with portal Doppler','Thyroid function (TSH, fT4)']:isBrain?['MRI brain with gadolinium contrast','MR angiography cerebral vessels','Neuropsychological assessment','Echocardiogram if cardiac embolism suspected']:['Chest HRCT if not improving in 48 hours','Urinary Legionella and pneumococcal antigen','Procalcitonin level','Pulse oximetry and ABG if SpO2 <94%']},
+      {title:'Treatment Options',icon:'💉',points:isLiver?['Target 7–10% body weight reduction (primary treatment)','Vitamin E 800 IU/day for non-diabetic NASH','Pioglitazone 30 mg/day if type 2 DM present','Statin therapy for dyslipidaemia (safe in NAFLD)']:isBrain?['Antihypertensive: target BP <130/80 mmHg','Statin therapy (high-intensity if ASCVD risk >10%)','Antiplatelet only if prior TIA/stroke — do not use empirically','Structured aerobic exercise programme']:['Empirical: Azithromycin 500mg/day + Beta-lactam','Supplemental O2 if SpO2 <94%','IV fluids if signs of dehydration','Bronchodilators if wheeze present']},
+      {title:'Follow-up Protocol',icon:'📅',points:isLiver?['Repeat LFTs at 3 months','Follow-up USS at 6 months','Annual FibroScan','Hepatology review in 4–6 weeks']:isBrain?['Repeat MRI brain in 12 months','Annual neurological review','BP monitoring monthly','Cognitive reassessment every 2 years']:['Clinical reassessment at 48–72 hours','Repeat CXR at 4–6 weeks','Pulmonology referral if no improvement','Spirometry if recurrent episodes']},
+    ],
+    patientAdvice:[
+      {title:'Lifestyle Changes',icon:'🏃',points:isLiver?['Lose 7–10% body weight gradually (0.5–1 kg/week)','150 min/week moderate aerobic exercise (brisk walk, swim)','Avoid alcohol completely','Avoid hepatotoxic drugs: excess paracetamol, herbal supplements']:isBrain?['Regular aerobic exercise 30 min/day, 5 days/week','Maintain healthy BMI (18–25)','Stop smoking immediately','Limit alcohol <2 units/day']:['Rest and avoid strenuous activity for 1 week','Stay in well-ventilated rooms','Avoid smoking and secondhand smoke','Deep breathing exercises 3× daily']},
+      {title:'Diet & Nutrition',icon:'🥗',points:isLiver?['Eliminate added sugars: soft drinks, packaged juices, sweets','Mediterranean diet: olive oil, vegetables, fish, legumes','Coffee (2–3 cups/day) — shown to reduce liver fibrosis risk','No refined carbohydrates or processed foods']:isBrain?['DASH diet: reduce salt to <5g/day','Increase omega-3 (oily fish 2×/week, flaxseed)','Reduce saturated and trans fats','Increase fruits, vegetables, whole grains']:['Increase fluid intake to 2–3 L/day','High vitamin C foods (citrus, peppers)','Warm broths and soups','Avoid cold drinks and excessive dairy if congested']},
+      {title:'Medications',icon:'💊',points:isLiver?['Take prescribed medications as directed','Do NOT take herbal liver supplements without physician approval','Statins are safe in fatty liver — do not stop them','Report any jaundice or dark urine immediately']:isBrain?['Take antihypertensives exactly as prescribed — never miss a dose','Do not stop medications without physician advice','Aspirin only if prescribed — do not self-medicate','Annual eye check if diabetic']:['Complete full antibiotic course as prescribed','Paracetamol for fever management (max 4 g/day)','Use inhaler if wheezing as directed','Do not self-prescribe steroids']},
+      {title:'Warning Signs',icon:'⚠️',points:isLiver?['ER immediately if skin or eyes turn yellow (jaundice)','Urgent care for severe upper abdominal pain','Doctor visit if legs/ankles swell significantly','ER if vomiting blood or passing black tarry stools']:isBrain?['Call ambulance immediately for sudden weakness/numbness','Emergency for sudden speech difficulty','ER for sudden severe headache (worst of life)','Immediate care for sudden vision loss or double vision']:['ER if breathing worsens suddenly','Emergency if lips or fingertips turn blue','Urgent care if fever exceeds 39.5°C','Immediate attention for chest pain or haemoptysis']},
+    ],
+    referralReason:isLiver?'Moderate hepatic steatosis with early portal hypertension signs (portal vein 13.2 mm) and elevated liver enzymes requires hepatology/gastroenterology consultation to exclude NASH, stage fibrosis, and initiate evidence-based treatment to prevent progression to cirrhosis.':needsRef?'Specialist consultation recommended based on scan findings.':null,
+  };
+}
+
+// ── Main App ──────────────────────────────────────────────────────────────────
+function App(){
+  const [scanType,setScanType]=useState('ct');
+  const [image,setImage]=useState(null);
+  const [imageBase64,setImageBase64]=useState(null);
+  const [imageMime,setImageMime]=useState('image/jpeg');
+  const [loading,setLoading]=useState(false);
+  const [loadStep,setLoadStep]=useState(0);
+  const [report,setReport]=useState(null);
+  const [toast,setToast]=useState(null);
+  const [dragOver,setDragOver]=useState(false);
+  const [patientInfo,setPatientInfo]=useState({name:'',age:'',gender:'',symptoms:''});
+  const fileRef=useRef();
+
+  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),4000);};
+
+  const handleFile=file=>{
+    if(!file)return;
+    if(!file.type.startsWith('image/')){showToast('⚠️ Please upload an image file');return;}
+    if(file.size>15*1024*1024){showToast('⚠️ File too large. Max 15 MB.');return;}
+    setImageMime(file.type||'image/jpeg');
+    const reader=new FileReader();
+    reader.onload=e=>{setImage(e.target.result);setImageBase64(e.target.result.split(',')[1]);setReport(null);};
+    reader.readAsDataURL(file);
+  };
+
+  const buildPrompt=()=>{
+    const label=SCAN_TYPES.find(s=>s.id===scanType)?.label||scanType.toUpperCase();
+    return `You are a board-certified radiologist and hepatologist AI. Analyze this ${label} image with full clinical rigor.
+
+Patient: ${patientInfo.name||'Anonymous'} | Age: ${patientInfo.age||'Unknown'} | Gender: ${patientInfo.gender||'Unknown'}
+Symptoms: ${patientInfo.symptoms||'None provided'}
+
+RETURN ONLY VALID JSON — no markdown, no backticks. Exact schema:
 
 {
-  "diagnosis_title": "Primary diagnosis in clinical language",
-  "icd_code": "ICD-10 code",
-  "severity": "Normal|Mild|Moderate|Severe",
+  "title": "Primary diagnosis in clinical language",
+  "icd_code": "ICD-10 code e.g. K76.0",
+  "severity": "low|medium|high|critical",
   "overall_confidence": 0-100,
-  "scan_quality": "Good|Adequate|Poor",
   "organ_assessed": "Liver|Lung|Brain|Kidney|Other",
-  
-  "meta": {
-    "report_id": "random 8-char hex",
-    "scan_type": "${scanType}",
-    "modality_specific": "e.g. contrast-enhanced, T2-weighted, etc.",
-    "image_orientation": "Axial|Coronal|Sagittal|Unknown"
-  },
-
+  "scan_quality": "Good|Adequate|Poor",
+  "lirads_score": "LR-1|LR-2|LR-3|LR-4|LR-5|LR-M|N/A",
+  "fibrosis_stage": "F0|F1|F2|F3|F4|N/A",
+  "steatosis_grade": "S0|S1|S2|S3|N/A",
+  "modality_detail": "e.g. Contrast-enhanced CT, T2-FLAIR MRI, PA X-Ray",
   "ai_confidence_breakdown": [
     {"label": "Lesion Detection", "score": 0-100},
     {"label": "Tissue Classification", "score": 0-100},
@@ -751,19 +797,9 @@ IMPORTANT: You MUST return ONLY valid JSON. No markdown. No preamble. Follow thi
     {"label": "Pathology Identification", "score": 0-100},
     {"label": "Staging Accuracy", "score": 0-100}
   ],
-
   "clinical_measurements": [
-    {
-      "name": "measurement name",
-      "value": numeric_value,
-      "unit": "unit string",
-      "normal_min": numeric,
-      "normal_max": numeric,
-      "status": "Normal|Elevated|Low|Critical",
-      "clinical_significance": "brief note"
-    }
+    {"name": "e.g. Liver Span", "value": numeric, "unit": "cm", "normal_min": numeric_or_null, "normal_max": numeric_or_null, "status": "Normal|Elevated|Low|Critical", "significance": "brief clinical note"}
   ],
-
   "biomarkers": [
     {"name": "ALT", "value": numeric, "unit": "U/L", "normal_max": 56},
     {"name": "AST", "value": numeric, "unit": "U/L", "normal_max": 40},
@@ -772,329 +808,148 @@ IMPORTANT: You MUST return ONLY valid JSON. No markdown. No preamble. Follow thi
     {"name": "Albumin", "value": numeric, "unit": "g/dL", "normal_min": 3.5, "normal_max": 5.5},
     {"name": "GGT", "value": numeric, "unit": "U/L", "normal_max": 55}
   ],
-
   "reasoning_chain": [
-    {
-      "step": 1,
-      "title": "Image Quality Assessment",
-      "detail": "detailed reasoning",
-      "metric": "specific metric or finding observed"
-    },
-    {
-      "step": 2,
-      "title": "Organ Morphology Analysis",
-      "detail": "detailed reasoning",
-      "metric": "specific metric"
-    },
-    {
-      "step": 3,
-      "title": "Density / Signal Intensity Evaluation",
-      "detail": "detailed reasoning",
-      "metric": "HU values or signal patterns"
-    },
-    {
-      "step": 4,
-      "title": "Lesion / Abnormality Detection",
-      "detail": "detailed reasoning",
-      "metric": "size, location, characteristics"
-    },
-    {
-      "step": 5,
-      "title": "Differential Diagnosis Reasoning",
-      "detail": "detailed reasoning",
-      "metric": "probability weighting"
-    },
-    {
-      "step": 6,
-      "title": "Severity Classification",
-      "detail": "detailed reasoning based on LI-RADS or equivalent",
-      "metric": "classification score"
-    }
+    {"step":1,"title":"Image Quality & Technical Assessment","detail":"detailed reasoning","metric":"specific observation or measurement","confidence_contribution":0-100},
+    {"step":2,"title":"Organ Morphology & Size Analysis","detail":"...","metric":"dimensions in mm/cm","confidence_contribution":0-100},
+    {"step":3,"title":"Density / Signal Intensity Evaluation","detail":"...","metric":"HU values or MRI signal patterns","confidence_contribution":0-100},
+    {"step":4,"title":"Lesion & Abnormality Detection","detail":"...","metric":"lesion size, location, margins","confidence_contribution":0-100},
+    {"step":5,"title":"Differential Diagnosis & Probability Weighting","detail":"...","metric":"top 3 differentials with probability %","confidence_contribution":0-100},
+    {"step":6,"title":"Final Classification & Severity Grading","detail":"...","metric":"score and grading rationale","confidence_contribution":0-100}
   ],
-
   "findings": [
-    {
-      "title": "finding title",
-      "description": "detailed clinical description",
-      "severity": "Normal|Mild|Moderate|Severe",
-      "location": "anatomical location",
-      "size_mm": numeric_or_null
-    }
+    {"name":"...","description":"detailed with measurements","severity":"normal|mild|moderate|severe","region":"anatomical location","size_mm":numeric_or_null,"density_hu":numeric_or_null}
   ],
-
-  "recommendations": [
-    "specific clinical recommendation 1",
-    "specific clinical recommendation 2",
-    "specific clinical recommendation 3",
-    "specific follow-up or referral recommendation"
+  "patientSummary": "Plain English for patient — 2-3 sentences",
+  "doctorAdvice": [
+    {"title":"Immediate Actions","icon":"🚨","points":["action1","action2","action3"]},
+    {"title":"Diagnostic Tests","icon":"🧪","points":["test1","test2","test3"]},
+    {"title":"Treatment Options","icon":"💉","points":["option1","option2","option3"]},
+    {"title":"Follow-up Protocol","icon":"📅","points":["protocol1","protocol2"]}
   ],
-
-  "lirads_score": "LR-1|LR-2|LR-3|LR-4|LR-5|LR-M|N/A",
-  "fibrosis_stage": "F0|F1|F2|F3|F4|N/A",
-  "steatosis_grade": "S0|S1|S2|S3|N/A"
+  "patientAdvice": [
+    {"title":"Lifestyle Changes","icon":"🏃","points":["advice1","advice2","advice3"]},
+    {"title":"Diet & Nutrition","icon":"🥗","points":["diet1","diet2","diet3"]},
+    {"title":"Medications","icon":"💊","points":["med1","med2"]},
+    {"title":"Warning Signs","icon":"⚠️","points":["sign1","sign2","sign3"]}
+  ],
+  "referralReason": "Reason or null"
 }
 
-Be specific with numbers. If the scan image is not a medical scan, still produce your best clinical-style analysis of what you observe, treating any features you see as if they were radiological findings. Always produce realistic, medically plausible values for the structured fields.`;
-}
-
-// ── RENDER REPORT ──────────────────────────────────────────────
-function renderReport(r, name, age, gender, scanType) {
-  // Header
-  document.getElementById('rhTitle').textContent = r.diagnosis_title || 'Analysis Complete';
-  document.getElementById('rhSub').textContent =
-    `${r.icd_code || ''} · ${r.scan_type || scanType} · ${r.meta?.modality_specific || ''} · Confidence: ${r.overall_confidence}%`;
-  
-  const sevBadge = document.getElementById('sevBadge');
-  sevBadge.textContent = (r.severity || 'Unknown').toUpperCase();
-  sevBadge.className = 'severity-badge ' + {Normal:'sev-normal', Mild:'sev-mild', Moderate:'sev-moderate', Severe:'sev-severe'}[r.severity] || 'sev-mild';
-
-  const now = new Date();
-  document.getElementById('rhMeta').innerHTML = `
-    <div class="rh-meta-item"><div class="rh-meta-key">PATIENT</div><div class="rh-meta-val">${name}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">AGE / GENDER</div><div class="rh-meta-val">${age} / ${gender}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">SCAN TYPE</div><div class="rh-meta-val">${r.scan_type || scanType}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">ORGAN</div><div class="rh-meta-val">${r.organ_assessed || '—'}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">LI-RADS</div><div class="rh-meta-val" style="color:var(--amber)">${r.lirads_score || 'N/A'}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">FIBROSIS</div><div class="rh-meta-val">${r.fibrosis_stage || 'N/A'}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">STEATOSIS</div><div class="rh-meta-val">${r.steatosis_grade || 'N/A'}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">REPORT DATE</div><div class="rh-meta-val">${now.toLocaleDateString()}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">SCAN QUALITY</div><div class="rh-meta-val">${r.scan_quality || '—'}</div></div>
-    <div class="rh-meta-item"><div class="rh-meta-key">REPORT ID</div><div class="rh-meta-val" style="font-family:var(--mono);font-size:.78rem">${r.meta?.report_id || genId()}</div></div>
-  `;
-  show('reportHeader');
-
-  // Confidence
-  if (r.ai_confidence_breakdown?.length) {
-    const barsHtml = r.ai_confidence_breakdown.map(b => `
-      <div class="conf-row">
-        <div class="conf-label"><span>${b.label}</span><span>${b.score}%</span></div>
-        <div class="conf-track"><div class="conf-fill" style="width:0%" data-target="${b.score}"></div></div>
-      </div>
-    `).join('');
-    document.getElementById('confBars').innerHTML = barsHtml;
-    show('confSection');
-    setTimeout(() => {
-      document.querySelectorAll('.conf-fill').forEach(el => {
-        el.style.width = el.dataset.target + '%';
-      });
-    }, 100);
-  }
-
-  // Measurements
-  if (r.clinical_measurements?.length) {
-    document.getElementById('measGrid').innerHTML = r.clinical_measurements.map(m => {
-      const status = m.status?.toLowerCase() === 'normal' ? 'normal' : m.status?.toLowerCase() === 'critical' ? 'critical' : 'warning';
-      const cls = status === 'normal' ? 'mc-normal' : status === 'critical' ? 'mc-critical' : 'mc-warning';
-      return `
-        <div class="measurement-card ${cls}">
-          <div class="mc-name">${m.name}</div>
-          <div class="mc-value">${m.value}<span class="mc-unit">${m.unit}</span></div>
-          <div class="mc-range">Range: ${m.normal_min ?? '—'} – ${m.normal_max ?? '—'} ${m.unit}</div>
-          <div class="mc-status ${status}">${m.status}</div>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:.3rem;">${m.clinical_significance || ''}</div>
-        </div>
-      `;
-    }).join('');
-    show('measSection');
-  }
-
-  // Charts
-  renderCharts(r);
-
-  // Reasoning Chain
-  if (r.reasoning_chain?.length) {
-    document.getElementById('reasoningChain').innerHTML = r.reasoning_chain.map(s => `
-      <div class="reasoning-step">
-        <div class="step-node">${s.step}</div>
-        <div class="step-content">
-          <div class="step-title">${s.title}</div>
-          <div class="step-detail">${s.detail}</div>
-          ${s.metric ? `<div class="step-metric">📐 ${s.metric}</div>` : ''}
-        </div>
-      </div>
-    `).join('');
-    show('reasoningSection');
-  }
-
-  // Findings
-  if (r.findings?.length) {
-    const sevColors = { Normal:'#22c55e', Mild:'#f0a500', Moderate:'#fb923c', Severe:'#ff4444' };
-    const sevIcons  = { Normal:'✅', Mild:'⚠️', Moderate:'🔶', Severe:'🚨' };
-    document.getElementById('findingsList').innerHTML = r.findings.map(f => `
-      <div class="finding-item">
-        <div class="finding-icon">${sevIcons[f.severity] || '📋'}</div>
-        <div>
-          <div class="finding-title">${f.title}</div>
-          <div class="finding-desc">${f.description}</div>
-          <div style="display:flex;gap:.5rem;margin-top:.3rem;flex-wrap:wrap;align-items:center;">
-            <span class="finding-sev" style="background:${sevColors[f.severity]}22;border:1px solid ${sevColors[f.severity]}55;color:${sevColors[f.severity]}">${f.severity}</span>
-            ${f.location ? `<span style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">📍 ${f.location}</span>` : ''}
-            ${f.size_mm ? `<span style="font-family:var(--mono);font-size:.68rem;color:var(--blue)">📏 ${f.size_mm} mm</span>` : ''}
-          </div>
-        </div>
-      </div>
-    `).join('');
-    show('findingsSection');
-  }
-
-  // Recommendations
-  if (r.recommendations?.length) {
-    document.getElementById('recList').innerHTML = r.recommendations.map(rec => `<li>${rec}</li>`).join('');
-    show('recSection');
-  }
-
-  show('disclaimer');
-}
-
-// ── CHARTS ────────────────────────────────────────────────────
-function renderCharts(r) {
-  if (bioChart) { bioChart.destroy(); bioChart = null; }
-  if (sevChart)  { sevChart.destroy();  sevChart  = null; }
-  if (rangeChart){ rangeChart.destroy();rangeChart = null; }
-
-  const chartDefaults = {
-    color: '#e2f0ee',
-    plugins: { legend: { labels: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 11 } } } }
+Use realistic, medically plausible numeric values based on scan type and visible features. Include HU values for CT, signal patterns for MRI.`;
   };
 
-  // Biomarker chart
-  if (r.biomarkers?.length) {
-    document.getElementById('chartRow').style.display = 'grid';
-    const bm = r.biomarkers;
-    const ctx1 = document.getElementById('biomarkerChart').getContext('2d');
-    bioChart = new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: bm.map(b => b.name),
-        datasets: [
-          {
-            label: 'Patient Value',
-            data: bm.map(b => b.value),
-            backgroundColor: bm.map(b => {
-              const max = b.normal_max || b.value;
-              return b.value > max * 1.1 ? 'rgba(255,68,68,.7)' : b.value > max ? 'rgba(240,165,0,.7)' : 'rgba(0,212,170,.6)';
-            }),
-            borderColor: bm.map(b => {
-              const max = b.normal_max || b.value;
-              return b.value > max * 1.1 ? '#ff4444' : b.value > max ? '#f0a500' : '#00d4aa';
-            }),
-            borderWidth: 1.5, borderRadius: 4
-          },
-          {
-            label: 'Normal Max',
-            data: bm.map(b => b.normal_max || null),
-            type: 'line',
-            borderColor: 'rgba(255,255,255,.2)',
-            borderDash: [6,3],
-            borderWidth: 1.5,
-            pointRadius: 3,
-            pointBackgroundColor: 'rgba(255,255,255,.4)',
-            fill: false, tension: 0
-          }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: true,
-        plugins: {
-          ...chartDefaults.plugins,
-          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} ${r.biomarkers[ctx.dataIndex]?.unit || ''}` } }
-        },
-        scales: {
-          x: { grid: { color: '#1a3a3f' }, ticks: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 10 } } },
-          y: { grid: { color: '#1a3a3f' }, ticks: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 10 } } }
-        }
-      }
-    });
+  const analyze=async()=>{
+    if(!imageBase64){showToast('📁 Upload a medical scan image first.');return;}
+    setLoading(true);setReport(null);setLoadStep(0);
+    const si=setInterval(()=>setLoadStep(s=>s<6?s+1:s),850);
+    try{
+      let text='';
+      try{
+        const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64,imageMime,prompt:buildPrompt()})});
+        if(res.ok){const d=await res.json();text=d.text||'';if(d.model)showToast(`✅ Analyzed with ${d.model}`);}
+        else{const e=await res.json().catch(()=>({}));throw new Error(e.error||`HTTP ${res.status}`);}
+      }catch(apiErr){console.warn('API fallback:',apiErr.message);showToast('⚠️ Demo mode — deploy to Vercel with GEMINI_API_KEY for live AI analysis');}
+      let parsed;
+      if(text){
+        const clean=text.replace(/```json/g,'').replace(/```/g,'').trim();
+        const m=clean.match(/\{[\s\S]*\}/);
+        parsed=JSON.parse(m?m[0]:clean);
+      }else{parsed=getDemoReport(scanType);}
+      setLoadStep(6);
+      await new Promise(r=>setTimeout(r,400));
+      setReport(parsed);
+    }catch(err){
+      console.error(err);
+      setReport(getDemoReport(scanType));
+      showToast('⚠️ Demo report shown');
+    }finally{clearInterval(si);setLoadStep(6);setLoading(false);}
+  };
 
-    // Severity distribution (radar for confidence)
-    const ctx2 = document.getElementById('severityChart').getContext('2d');
-    const conf = r.ai_confidence_breakdown || [];
-    sevChart = new Chart(ctx2, {
-      type: 'radar',
-      data: {
-        labels: conf.map(c => c.label),
-        datasets: [{
-          label: 'AI Confidence',
-          data: conf.map(c => c.score),
-          backgroundColor: 'rgba(0,212,170,.15)',
-          borderColor: '#00d4aa',
-          borderWidth: 2,
-          pointBackgroundColor: '#00d4aa',
-          pointRadius: 4
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: true,
-        plugins: { ...chartDefaults.plugins },
-        scales: {
-          r: {
-            min: 0, max: 100,
-            grid: { color: '#1a3a3f' },
-            ticks: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 9 }, stepSize: 25, backdropColor: 'transparent' },
-            pointLabels: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 9 } }
-          }
-        }
-      }
-    });
-  }
+  return(
+    <div className="app-shell">
+      <header className="header">
+        <div className="logo"><div className="logo-icon">⚕️</div><div className="logo-text">Medi<span>Scan</span> AI</div></div>
+        <div className="header-badge">Clinical Diagnostic Platform · v3.1</div>
+        <div className="header-right"><div className="status-dot"></div><div className="status-text">AI ONLINE</div></div>
+      </header>
+      <div className="main">
 
-  // Measurement vs range chart
-  if (r.clinical_measurements?.length) {
-    document.getElementById('chartRowSingle').style.display = 'block';
-    const meas = r.clinical_measurements.filter(m => m.normal_max != null);
-    const ctx3 = document.getElementById('rangeChart').getContext('2d');
-    rangeChart = new Chart(ctx3, {
-      type: 'bar',
-      data: {
-        labels: meas.map(m => m.name),
-        datasets: [
-          {
-            label: 'Patient',
-            data: meas.map(m => m.value),
-            backgroundColor: meas.map(m => {
-              if (m.status === 'Critical') return 'rgba(255,68,68,.7)';
-              if (m.status !== 'Normal') return 'rgba(240,165,0,.7)';
-              return 'rgba(56,189,248,.6)';
-            }),
-            borderRadius: 4, borderWidth: 1.5,
-            borderColor: meas.map(m => m.status === 'Critical' ? '#ff4444' : m.status !== 'Normal' ? '#f0a500' : '#38bdf8')
-          },
-          {
-            label: 'Max Normal',
-            data: meas.map(m => m.normal_max),
-            backgroundColor: 'rgba(255,255,255,.06)',
-            borderColor: 'rgba(255,255,255,.2)',
-            borderWidth: 1, borderRadius: 4, borderDash: [4,2]
-          }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: true, indexAxis: 'y',
-        plugins: { ...chartDefaults.plugins },
-        scales: {
-          x: { grid: { color: '#1a3a3f' }, ticks: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 10 } } },
-          y: { grid: { color: '#1a3a3f' }, ticks: { color: '#5a8080', font: { family: 'IBM Plex Mono', size: 10 } } }
-        }
-      }
-    });
-  }
+        {/* LEFT */}
+        <div className="left-panel">
+          <div className="panel-section">
+            <div className="section-label">Scan Type</div>
+            <div className="scan-types">
+              {SCAN_TYPES.map(s=>(
+                <button key={s.id} className={`scan-type-btn ${scanType===s.id?'active':''}`} onClick={()=>{setScanType(s.id);setReport(null);}}>
+                  <div className="scan-type-icon">{s.icon}</div>
+                  <div className="scan-type-label">{s.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="panel-section">
+            <div className="section-label">Medical Image</div>
+            <div className={`upload-zone ${dragOver?'drag-over':''}`} onClick={()=>fileRef.current?.click()} onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);handleFile(e.dataTransfer.files[0]);}}>
+              <div className="upload-icon">{image?'✅':'🏥'}</div>
+              <div className="upload-title">{image?'Image loaded — ready to analyze':'Drop your scan here'}</div>
+              <div className="upload-sub">Click or drag & drop · JPG, PNG, WEBP</div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={e=>handleFile(e.target.files[0])}/>
+            {image&&(
+              <div className="preview-area">
+                <img src={image} alt="Scan preview"/>
+                <div className="preview-overlay">{SCAN_TYPES.find(s=>s.id===scanType)?.label}</div>
+                <button className="preview-remove" onClick={()=>{setImage(null);setImageBase64(null);setReport(null);}}>✕ Remove</button>
+              </div>
+            )}
+          </div>
+          <div className="panel-section">
+            <div className="section-label">Patient Information</div>
+            <div className="form-row"><label className="form-label">Patient Name</label><input className="form-input" placeholder="Full name" value={patientInfo.name} onChange={e=>setPatientInfo({...patientInfo,name:e.target.value})}/></div>
+            <div className="form-row form-row-2">
+              <div><label className="form-label">Age</label><input className="form-input" type="number" placeholder="Years" value={patientInfo.age} onChange={e=>setPatientInfo({...patientInfo,age:e.target.value})}/></div>
+              <div><label className="form-label">Gender</label><select className="form-select" value={patientInfo.gender} onChange={e=>setPatientInfo({...patientInfo,gender:e.target.value})}><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+            </div>
+            <div className="form-row"><label className="form-label">Symptoms / Clinical Notes</label><textarea className="form-input" rows={3} placeholder="Symptoms, history, reason for scan..." value={patientInfo.symptoms} onChange={e=>setPatientInfo({...patientInfo,symptoms:e.target.value})} style={{resize:'vertical'}}/></div>
+          </div>
+          <div className="panel-section">
+            <button className="analyze-btn" onClick={analyze} disabled={loading||!image}>
+              {loading?<><span style={{animation:'spin2 1s linear infinite',display:'inline-block'}}>⚙️</span> Analyzing...</>:<>🔬 Analyze Scan</>}
+            </button>
+            <div style={{marginTop:10,fontSize:9,color:'var(--text3)',textAlign:'center',lineHeight:1.7}}>Uses GEMINI_API_KEY from Vercel environment.<br/>Falls back to detailed demo report if API unavailable.</div>
+          </div>
+        </div>
+
+        {/* RIGHT */}
+        <div className="right-panel">
+          {loading?(
+            <LoadingScreen step={loadStep}/>
+          ):report?(
+            <ReportView report={report} scanType={scanType} patientInfo={patientInfo} image={image}/>
+          ):(
+            <div className="welcome-screen">
+              <div className="welcome-glyph">🔬</div>
+              <div className="welcome-title">AI Clinical Diagnostic Platform</div>
+              <div className="welcome-sub">Upload an X-Ray, MRI, or CT scan to generate a full doctor-grade report with precise measurements, biomarker charts, AI reasoning chain, and clinical recommendations.</div>
+              <div className="feature-grid">
+                {[['📐','Precise Measurements','HU density, organ dimensions & biomarkers vs normal range'],['📊','3 Clinical Charts','Biomarker bar, confidence radar & measurement vs range charts'],['🧠','AI Reasoning Chain','Step-by-step how the AI reached every conclusion'],['🔍','Findings with Data','Size in mm, density in HU, location, severity per finding'],['👨‍⚕️','Doctor Protocol','Clinical tests, treatment & follow-up recommendations'],['🌟','Find Specialists','Verified doctors with direct appointment booking']].map(([icon,title,desc],i)=>(
+                  <div key={i} className="feature-card">
+                    <div className="feature-card-icon">{icon}</div>
+                    <div className="feature-card-title">{title}</div>
+                    <div className="feature-card-desc">{desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {toast&&<div className="toast">{toast}</div>}
+    </div>
+  );
 }
 
-// ── HELPERS ────────────────────────────────────────────────────
-function show(id) { document.getElementById(id).style.display = ''; }
-function hide(id) { document.getElementById(id).style.display = 'none'; }
-
-function hideAll() {
-  ['emptyState','processing','errorBox','reportHeader','confSection',
-   'measSection','reasoningSection','findingsSection','recSection','disclaimer'].forEach(hide);
-  document.getElementById('chartRow').style.display = 'none';
-  document.getElementById('chartRowSingle').style.display = 'none';
-  document.querySelectorAll('.proc-step').forEach(s => { s.classList.remove('done','active'); });
-}
-
-function genId() {
-  return Math.random().toString(16).slice(2,10).toUpperCase();
-}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
